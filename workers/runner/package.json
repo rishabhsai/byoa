@@ -1,0 +1,20 @@
+{
+  "name": "@byoa/runner",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "wrangler deploy --dry-run --containers-rollout=none --outdir dist",
+    "build:container": "wrangler deploy --dry-run --outdir dist-container",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "@cloudflare/sandbox": "0.12.3"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "latest",
+    "typescript": "^7.0.2",
+    "wrangler": "4.112.0"
+  }
+}

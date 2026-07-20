@@ -1,0 +1,32 @@
+# BYOA agent setup
+
+BYOA adds a user-authorized coding agent to an application. The developer owns the Cloudflare deployment. The end user connects their own supported agent account.
+
+## inspect first
+
+```bash
+git clone https://github.com/rishabhsai/byoa.git
+cd byoa
+npm install
+npm run check
+```
+
+Read `AGENTS.md`, `docs/architecture.md`, `docs/deploy.md`, and `docs/security.md` before changing the integration.
+
+## deploy the runner
+
+Requirements: Cloudflare Workers Paid, Containers, and an authenticated Wrangler session. R2 is required before enabling durable credential and workspace persistence.
+
+```bash
+npm run deploy
+```
+
+The deploy command creates `BYOA_APP_SECRET` when one is not provided. Save it in the developer backend, which exchanges it for short-lived browser session tokens. Never put it or a Cloudflare credential in browser code.
+
+## add the client
+
+Use `@byoa/sdk` for the protocol client. Use `@byoa/react` only if the app uses React. Packages are currently consumed from this repository and are not published to npm yet.
+
+## do not improvise around blockers
+
+If Containers are unavailable, stop and enable them. The current alpha runner is ephemeral; do not imply durable sessions until R2 persistence lands. Do not replace tenant isolation with a shared process or store agent credentials in the workspace.

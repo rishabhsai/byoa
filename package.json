@@ -1,0 +1,23 @@
+{
+  "name": "byoa",
+  "version": "0.0.1",
+  "private": true,
+  "description": "bring your own agent",
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "workers/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace @byoa/sdk && npm run build --workspace @byoa/react && npm run build --workspace @byoa/site && npm run build --workspace @byoa/runner",
+    "check": "npm run build --workspace @byoa/sdk && npm run check --workspace @byoa/sdk && npm run check --workspace @byoa/react && npm run check --workspace @byoa/site && npm run check --workspace @byoa/runner",
+    "deploy": "node scripts/deploy.mjs",
+    "dev": "npm run dev --workspace @byoa/site",
+    "test": "npm run test --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "Apache-2.0"
+}
