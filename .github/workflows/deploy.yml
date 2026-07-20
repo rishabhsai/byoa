@@ -1,0 +1,45 @@
+name: deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: byoa-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npm run check
+      - run: npm run build --workspace @byoa/site
+      - run: npm run build --workspace @byoa/demo
+
+      - name: deploy runner
+        run: npx wrangler deploy --config workers/runner/wrangler.jsonc
+
+      - name: deploy site
+        working-directory: apps/site
+        run: npx wrangler pages deploy dist --project-name byoa --branch main
+
+      - name: deploy demo
+        working-directory: apps/demo
+        run: npx wrangler pages deploy dist --project-name byoa-demo --branch main

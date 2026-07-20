@@ -1,6 +1,6 @@
 import { StrictMode, useEffect, useRef, useState, type FormEvent } from "react";
 import { createRoot } from "react-dom/client";
-import { BYOA, type DeviceLogin } from "@byoa/sdk";
+import { BYOA, type DeviceLogin } from "byoa";
 import "./styles.css";
 
 type Session = { endpoint: string; token: string };

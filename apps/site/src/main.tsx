@@ -31,7 +31,7 @@ function Header() {
         <a href="/#how">how it works</a>
         <a href="/#setup">setup</a>
         <a href="/docs">docs</a>
-        <a href={demoUrl}>demo</a>
+        <a className="nav-demo" href={demoUrl}>demo ↗</a>
         <a href="https://github.com/rishabhsai/byoa">github</a>
       </nav>
     </header>
@@ -68,8 +68,8 @@ function Landing() {
         <p className="status">open source / early alpha</p>
         <div className="logo" aria-label="BYOA">BYOA</div>
         <h1>bring your <a href="#how">agent</a></h1>
-        <p className="lead">Let users connect their own coding agent to your app. You run the infrastructure. They authorize their account. You do not ship one shared model key.</p>
-        <div className="hero-links"><a href="#setup">set it up</a><span>|</span><a href={demoUrl}>try the demo</a><span>|</span><a href="https://github.com/rishabhsai/byoa">read the code</a></div>
+        <p className="lead">Run your users&apos; Codex app-server in the cloud. They sign in with ChatGPT. No shared API bill.</p>
+        <div className="hero-links"><a href="#setup">set it up</a><span>|</span><a className="demo-link" href={demoUrl}>open the demo ↗</a><span>|</span><a href="https://github.com/rishabhsai/byoa">read the code</a></div>
         <CopyCommand />
       </section>
 
@@ -97,20 +97,19 @@ function Landing() {
 
       <section id="setup">
         <h2>setup</h2>
-        <p>Requirements: Node 20+, Wrangler, Workers Paid, and Containers enabled. Use Wrangler OAuth locally or a scoped Cloudflare token in CI. Never paste a global Cloudflare API key into the browser.</p>
+        <p>Requirements: Node 20+, Workers Paid, and Containers enabled. The command uses Wrangler OAuth locally or a scoped Cloudflare token in CI. Never paste a global Cloudflare API key into the browser.</p>
 
         <div className="setup-step">
           <h3>1. deploy the runner</h3>
-          <pre><code>{`git clone https://github.com/rishabhsai/byoa.git
-cd byoa
-npm install
-npm run deploy`}</code></pre>
+          <pre><code>{`npx byoa deploy`}</code></pre>
           <p>The deploy command creates a backend secret when needed and prints the Worker URL. Store both in your app&apos;s server environment.</p>
         </div>
 
         <div className="setup-step">
           <h3>2. issue a browser session from your backend</h3>
-          <pre><code>{`import { BYOAServer } from "@byoa/sdk/server";
+          <pre><code>{`npm install byoa
+
+import { BYOAServer } from "byoa/server";
 
 const byoa = new BYOAServer({
   endpoint: process.env.BYOA_URL,
@@ -126,7 +125,7 @@ const session = await byoa.createSession({
 
         <div className="setup-step">
           <h3>3. connect from the app</h3>
-          <pre><code>{`import { BYOA } from "@byoa/sdk";
+          <pre><code>{`import { BYOA } from "byoa";
 
 const agent = new BYOA({
   endpoint: session.endpoint,
@@ -145,12 +144,12 @@ const login = await agent.startDeviceLogin();`}</code></pre>
         <h2>current status</h2>
         <dl className="status-list">
           <div><dt>landing + docs</dt><dd>live</dd></div>
-          <div><dt>sdk + react bindings</dt><dd>source alpha</dd></div>
-          <div><dt>cloudflare runner</dt><dd>image builds / Workers Paid required</dd></div>
+          <div><dt>npm package</dt><dd>built / publish login needed</dd></div>
+          <div><dt>cloudflare runner</dt><dd>control plane live / container alpha</dd></div>
           <div><dt>durable agent credentials</dt><dd>not done</dd></div>
-          <div><dt>npm packages</dt><dd>not published</dd></div>
+          <div><dt>install path</dt><dd>npm install byoa / npx byoa deploy</dd></div>
         </dl>
-        <p>This page says exactly what exists. The demo will become a real end-to-end test as soon as the runner and durable account storage are deployed.</p>
+        <p>The demo interface and session flow reach the live runner. The Codex handshake and durable account storage are still alpha.</p>
       </section>
 
       <hr />
@@ -211,7 +210,7 @@ item/agentMessage/delta … turn/completed`}</code></pre>
         <hr />
         <section id="limits">
           <h2>alpha limits</h2>
-          <p>Cloudflare Containers are still a beta dependency. The current runner filesystem is ephemeral, packages are source-only, and hostile-workload isolation still needs a production security review. Do not market the alpha as durable or generally available yet.</p>
+          <p>Cloudflare Containers are still a beta dependency. The current runner filesystem is ephemeral, the npm package still needs its first publish, and hostile-workload isolation needs a production security review. Do not market the alpha as durable or generally available yet.</p>
         </section>
       </article>
       <footer><span>byoa docs</span><a href="/">home</a></footer>

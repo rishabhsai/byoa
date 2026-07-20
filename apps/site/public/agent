@@ -1,31 +1,25 @@
 # BYOA agent setup
 
-BYOA adds a user-authorized coding agent to an application. The developer owns the Cloudflare deployment. The end user connects their own supported agent account.
+BYOA runs an app user's Codex app-server in the developer's Cloudflare account. The user signs in with ChatGPT. The developer does not provide one shared OpenAI API key.
 
-## inspect first
+## install
 
 ```bash
-git clone https://github.com/rishabhsai/byoa.git
-cd byoa
-npm install
-npm run check
+npx byoa deploy
+npm install byoa
 ```
 
-Read `AGENTS.md`, `docs/architecture.md`, `docs/deploy.md`, `docs/demo.md`, and `docs/security.md` before changing the integration.
+No clone is required for an app integration. Repository contributors should read `AGENTS.md`, `docs/architecture.md`, `docs/deploy.md`, `docs/demo.md`, and `docs/security.md` before changing BYOA itself.
 
 ## deploy the runner
 
 Requirements: Cloudflare Workers Paid, Containers, and an authenticated Wrangler session. R2 is required before enabling durable credential and workspace persistence.
 
-```bash
-npm run deploy
-```
-
 The deploy command creates `BYOA_APP_SECRET` when one is not provided. Save it in the developer backend, which exchanges it for short-lived browser session tokens. Never put it or a Cloudflare credential in browser code.
 
 ## add the client
 
-Use `@byoa/sdk` for the protocol client. Use `@byoa/react` only if the app uses React. Packages are currently consumed from this repository and are not published to npm yet.
+Use `byoa` for the protocol client, `byoa/server` in the trusted backend, and `byoa/react` only if the app uses React. The package is publish-ready but still needs its first npm publish.
 
 The example chat integration lives in `apps/demo` and is deployed at `https://byoa-demo.pages.dev`. Its connect flow remains explicitly offline until a production runner and its Pages secrets are configured.
 

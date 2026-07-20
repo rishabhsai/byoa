@@ -25,6 +25,7 @@ button { font: inherit; }
 .wordmark { font-weight: 700; text-decoration: none; }
 .nav nav { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px 18px; font-size: 13px; }
 .nav nav a { text-decoration: none; }
+.nav nav .nav-demo { color: var(--yellow); text-decoration: underline; text-decoration-color: var(--yellow); }
 
 .hero { min-height: 82svh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 76px 0; text-align: center; }
 .status { margin: 0 0 28px; color: var(--muted); font-size: 12px; }
@@ -34,6 +35,7 @@ button { font: inherit; }
 .lead { max-width: 780px; margin: 0 auto 28px; color: #d2d1cb; font-size: 17px; }
 .hero-links { margin: 0 0 34px; display: flex; flex-wrap: wrap; justify-content: center; gap: 7px 12px; font-size: 14px; }
 .hero-links span { color: var(--muted); }
+.hero-links .demo-link { color: var(--yellow); text-decoration-color: var(--yellow); }
 
 hr { width: 100%; height: 1px; margin: 0; border: 0; background: var(--line); }
 section { padding: 48px 0 56px; scroll-margin-top: 20px; }

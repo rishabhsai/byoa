@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { BYOA, type DeviceLogin } from "@byoa/sdk";
+import { BYOA, type DeviceLogin } from "./index.js";
 
 export type ConnectAgentProps = {
   client: BYOA;
