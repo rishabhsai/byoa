@@ -42,7 +42,7 @@ npm run dev
 
 The Cloudflare runner requires Workers Paid and Containers access. See [docs/deploy.md](docs/deploy.md).
 
-The example chat app is deployed separately and stays in an explicit offline state until its runner secrets are configured. See [docs/demo.md](docs/demo.md).
+The example chat app is deployed separately and reads model choices from the signed-in user's Codex account. See [docs/demo.md](docs/demo.md).
 
 Production releases run through [GitHub Actions](.github/workflows/deploy.yml), including the Docker build for the Cloudflare runner. Local Docker is not required to release this repository.
 

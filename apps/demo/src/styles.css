@@ -13,7 +13,7 @@
 
 * { box-sizing: border-box; }
 body { margin: 0; min-width: 320px; background: var(--bg); }
-button, textarea { font: inherit; }
+button, textarea, select { font: inherit; }
 a { color: inherit; text-underline-offset: 3px; }
 a:hover, a:focus-visible { color: var(--yellow); }
 main { width: min(940px, calc(100% - 32px)); min-height: 100svh; margin: auto; display: flex; flex-direction: column; }
@@ -45,6 +45,12 @@ button:disabled { cursor: not-allowed; opacity: .5; }
 .message b { color: var(--yellow); font-size: 11px; font-weight: 400; }
 .message.user b { color: var(--muted); }
 .message p { margin: 0; white-space: pre-wrap; font-size: 14px; line-height: 1.7; }
+.settings { display: flex; gap: 24px; padding: 12px 24px; border-top: 1px solid var(--line); }
+.settings label { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.settings span { color: var(--muted); font-size: 10px; }
+.settings select { min-width: 0; max-width: 240px; padding: 6px 24px 6px 8px; border: 1px solid var(--line); border-radius: 0; outline: 0; color: var(--ink); background: var(--bg); }
+.settings select:focus { border-color: var(--yellow); }
+.settings select:disabled { opacity: .5; }
 form { display: grid; grid-template-columns: 70px minmax(0, 1fr) auto; gap: 14px; align-items: start; padding: 18px 24px; border-top: 1px solid var(--line); }
 form label { padding-top: 11px; color: var(--muted); font-size: 11px; }
 textarea { width: 100%; resize: vertical; padding: 10px 12px; border: 1px solid var(--line); border-radius: 0; outline: 0; color: var(--ink); background: var(--bg); line-height: 1.5; }
@@ -53,6 +59,9 @@ textarea:focus { border-color: var(--yellow); }
 @media (max-width: 620px) {
   .demo-head { align-items: flex-start; flex-direction: column; }
   .message { grid-template-columns: 1fr; gap: 5px; }
+  .settings { align-items: flex-start; flex-direction: column; gap: 10px; }
+  .settings label { width: 100%; justify-content: space-between; }
+  .settings select { width: min(240px, 70%); }
   form { grid-template-columns: 1fr; }
   form label { padding: 0; }
   form button { justify-self: start; }

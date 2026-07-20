@@ -10,6 +10,35 @@ export type BYOAEvent = {
   params?: unknown;
 };
 
+export type BYOAReasoningEffort = {
+  reasoningEffort: string;
+  description: string;
+};
+
+export type BYOAModel = {
+  id: string;
+  model: string;
+  displayName: string;
+  description: string;
+  hidden: boolean;
+  supportedReasoningEfforts: BYOAReasoningEffort[];
+  defaultReasoningEffort: string;
+  inputModalities: string[];
+  supportsPersonality: boolean;
+  serviceTiers: Array<{ id: string; name: string; description: string }>;
+  isDefault: boolean;
+};
+
+export type BYOAModelList = {
+  data: BYOAModel[];
+  nextCursor: string | null;
+};
+
+export type BYOATurnOptions = {
+  model?: string;
+  effort?: string;
+};
+
 export type BYOAOptions = {
   endpoint: string;
   token: string;
@@ -105,10 +134,15 @@ export class BYOA extends EventTarget {
     return this.request("thread/start", options);
   }
 
-  async startTurn(threadId: string, input: string): Promise<unknown> {
+  async listModels(options: { cursor?: string; limit?: number; includeHidden?: boolean } = {}): Promise<BYOAModelList> {
+    return this.request<BYOAModelList>("model/list", options);
+  }
+
+  async startTurn(threadId: string, input: string, options: BYOATurnOptions = {}): Promise<unknown> {
     return this.request("turn/start", {
       threadId,
       input: [{ type: "text", text: input }],
+      ...options,
     });
   }
 

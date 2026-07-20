@@ -1,10 +1,8 @@
 # demo
 
-The demo is a real BYOA client, not a simulated chat. It requests a short-lived session from a Pages Function, starts Codex device login, creates an ephemeral read-only thread, and renders streamed agent message deltas.
+The demo is a real BYOA client, not a simulated chat. It requests a short-lived session from a Pages Function, starts Codex device login, reads the user's available models, creates an ephemeral read-only thread, and renders streamed agent message deltas.
 
 It remains offline until the runner is deployed and these Pages secrets are configured:
-
-The current Cloudflare account does not have Workers Paid, so Cloudflare rejects the container rollout. The image itself builds successfully. Enable Workers Paid before configuring the secrets below.
 
 ```bash
 npx wrangler pages secret put BYOA_URL --project-name=byoa-demo

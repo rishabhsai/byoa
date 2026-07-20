@@ -13,6 +13,16 @@ import { BYOAServer } from "byoa/server";
 import { ConnectAgent } from "byoa/react";
 ```
 
+Model choices come from each signed-in Codex account:
+
+```ts
+const { data: models } = await client.listModels();
+await client.startTurn(threadId, "hello", {
+  model: models[0].model,
+  effort: models[0].defaultReasoningEffort,
+});
+```
+
 The deploy command requires Node.js 20+, Cloudflare Workers Paid, Containers, and Wrangler OAuth or `CLOUDFLARE_API_TOKEN`.
 
 [docs](https://byoa-3ln.pages.dev/docs) · [demo](https://byoa-demo.pages.dev) · [source](https://github.com/rishabhsai/byoa)

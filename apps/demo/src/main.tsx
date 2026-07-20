@@ -1,6 +1,6 @@
 import { StrictMode, useEffect, useRef, useState, type FormEvent } from "react";
 import { createRoot } from "react-dom/client";
-import { BYOA, type DeviceLogin } from "byoa";
+import { BYOA, type BYOAModel, type DeviceLogin } from "byoa";
 import "./styles.css";
 
 type Session = { endpoint: string; token: string };
@@ -18,11 +18,32 @@ function Demo() {
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string>();
   const [running, setRunning] = useState(false);
+  const [models, setModels] = useState<BYOAModel[]>([]);
+  const [model, setModel] = useState("");
+  const [effort, setEffort] = useState("");
   const clientRef = useRef<BYOA | undefined>(undefined);
   const threadRef = useRef<string | undefined>(undefined);
   const responseRef = useRef<string | undefined>(undefined);
 
   useEffect(() => () => clientRef.current?.close(), []);
+
+  const loadModels = async (client: BYOA) => {
+    try {
+      const response = await client.listModels({ limit: 100, includeHidden: false });
+      const available = response.data.filter((item) => !item.hidden);
+      const preferred = available.find((item) => item.isDefault) ?? available[0];
+      setModels(available);
+      setModel(preferred?.model ?? "");
+      setEffort(preferred?.defaultReasoningEffort ?? "");
+    } catch {
+      setModels([]);
+    }
+  };
+
+  const ready = (client: BYOA) => {
+    setPhase("ready");
+    void loadModels(client);
+  };
 
   const connect = async () => {
     setPhase("connecting");
@@ -52,7 +73,7 @@ function Demo() {
 
       const account = await client.readAccount() as { account?: unknown };
       if (account.account) {
-        setPhase("ready");
+        ready(client);
         return;
       }
 
@@ -66,7 +87,7 @@ function Demo() {
           setPhase("idle");
           return;
         }
-        setPhase("ready");
+        ready(client);
       }, { once: true });
     } catch (cause) {
       setPhase("offline");
@@ -90,10 +111,18 @@ function Demo() {
 
     try {
       if (!threadRef.current) {
-        const started = await client.startThread({ ephemeral: true, sandbox: "read-only", approvalPolicy: "never" }) as ThreadStart;
+        const started = await client.startThread({
+          ephemeral: true,
+          sandbox: "read-only",
+          approvalPolicy: "never",
+          ...(model ? { model } : {}),
+        }) as ThreadStart;
         threadRef.current = started.thread.id;
       }
-      await client.startTurn(threadRef.current, text);
+      await client.startTurn(threadRef.current, text, {
+        ...(model ? { model } : {}),
+        ...(effort ? { effort } : {}),
+      });
     } catch (cause) {
       setRunning(false);
       responseRef.current = undefined;
@@ -133,6 +162,32 @@ function Demo() {
             <div className="messages" aria-live="polite">
               {messages.map((message) => <div className={`message ${message.role}`} key={message.id}><b>{message.role === "agent" ? "agent" : "you"}</b><p>{message.text || "▌"}</p></div>)}
             </div>
+            {models.length ? (
+              <div className="settings" aria-label="agent settings">
+                <label>
+                  <span>model</span>
+                  <select
+                    value={model}
+                    disabled={running}
+                    onChange={(event) => {
+                      const next = models.find((item) => item.model === event.target.value);
+                      setModel(event.target.value);
+                      setEffort(next?.defaultReasoningEffort ?? "");
+                    }}
+                  >
+                    {models.map((item) => <option key={item.id} value={item.model}>{item.displayName}</option>)}
+                  </select>
+                </label>
+                <label>
+                  <span>thinking</span>
+                  <select value={effort} disabled={running} onChange={(event) => setEffort(event.target.value)}>
+                    {(models.find((item) => item.model === model)?.supportedReasoningEfforts ?? []).map((item) => (
+                      <option key={item.reasoningEffort} value={item.reasoningEffort}>{item.reasoningEffort}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            ) : null}
             <form onSubmit={send}>
               <label htmlFor="message">message</label>
               <textarea id="message" value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="ask the agent something" rows={3} />
