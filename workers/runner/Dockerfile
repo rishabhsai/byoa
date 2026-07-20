@@ -1,4 +1,4 @@
-FROM docker.io/cloudflare/sandbox:0.7.0
+FROM docker.io/cloudflare/sandbox:0.12.3
 
 USER root
 
@@ -6,7 +6,10 @@ ARG CODEX_VERSION=0.144.6
 RUN npm install -g "@openai/codex@${CODEX_VERSION}" \
   && npm install --prefix /opt/byoa ws@8.21.1 \
   && mkdir -p /workspace /var/lib/byoa/codex \
-  && chown -R root:root /opt/byoa /var/lib/byoa
+  && chown -R root:root /opt/byoa /var/lib/byoa \
+  && cd /opt/byoa \
+  && node --input-type=module --eval 'import("ws")' \
+  && codex --version
 
 COPY supervisor.mjs /opt/byoa/supervisor.mjs
 

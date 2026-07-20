@@ -63,7 +63,8 @@ async function secureStringEqual(left: string, right: string): Promise<boolean> 
 async function sandboxIdFor(input: SessionInput): Promise<string> {
   const source = `${input.installationId}\0${input.userId}\0${input.workspaceId}`;
   const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", encoder.encode(source)));
-  return `byoa-${base64url(digest).slice(0, 40)}`;
+  const hex = Array.from(digest, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  return `byoa-${hex.slice(0, 40)}`;
 }
 
 async function issueToken(secret: string, claims: SessionClaims): Promise<string> {
@@ -133,7 +134,7 @@ async function connect(request: Request, env: Env): Promise<Response> {
   const processes = await sandbox.listProcesses();
   let supervisor = processes.find((process) => process.id === "byoa-supervisor");
   if (!supervisor) {
-    const process = await sandbox.startProcess("node /opt/byoa/supervisor.mjs", {
+    supervisor = await sandbox.startProcess("node /opt/byoa/supervisor.mjs", {
       processId: "byoa-supervisor",
       env: {
         CODEX_HOME: "/var/lib/byoa/codex",
@@ -141,7 +142,18 @@ async function connect(request: Request, env: Env): Promise<Response> {
       },
       autoCleanup: true,
     });
-    await process.waitForPort(8787, { path: "/health", timeout: 20_000 });
+  }
+
+  try {
+    await supervisor.waitForPort(8787, { path: "/health", timeout: 20_000 });
+  } catch (error) {
+    const logs = await supervisor.getLogs().catch(() => ({ stdout: "", stderr: "logs unavailable" }));
+    console.error("byoa supervisor failed", {
+      error: error instanceof Error ? error.message : String(error),
+      stdout: logs.stdout,
+      stderr: logs.stderr,
+    });
+    throw error;
   }
 
   return sandbox.wsConnect(request, 8787);
