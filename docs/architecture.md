@@ -10,6 +10,20 @@ The developer backend authenticates to the BYOA Worker with a deployment secret 
 
 The supervisor owns one `codex app-server --stdio` child process. It forwards JSON-RPC messages without exposing Codex's experimental network listener.
 
+## runtime surface
+
+BYOA keeps Codex app-server as the agent runtime instead of replacing it with a chat protocol.
+
+```text
+app input -> threads + turns -> codex app-server -> streamed items -> app UI
+                  |                   |
+            files + schema       tools + hooks
+```
+
+The SDK has typed namespaces for threads, turns, workspace files, models, MCP, skills, and hooks. It also exposes raw requests, notifications, events, and server-initiated requests so new app-server capabilities do not require a parallel BYOA protocol.
+
+Dynamic tools are experimental in Codex. The app-server asks its connected client to execute them with `item/tool/call`. BYOA can answer browser-safe tools today. Privileged app tools need the planned signed backend router, or an authenticated MCP server, so secrets never enter browser code.
+
 ## state
 
 - `/workspace`: repository and generated files.

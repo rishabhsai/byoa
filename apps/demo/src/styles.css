@@ -40,11 +40,20 @@ button:disabled { cursor: not-allowed; opacity: .5; }
 .error { color: #e9a088; font-size: 12px; }
 
 .chat { border: 1px solid var(--line); background: var(--panel); }
+.modes { display: flex; border-bottom: 1px solid var(--line); }
+.modes button { min-width: 110px; padding: 11px 18px; border: 0; border-right: 1px solid var(--line); color: var(--muted); background: transparent; font-size: 11px; }
+.modes button:hover, .modes button:focus-visible { color: var(--yellow); background: transparent; }
+.modes button.active { color: var(--bg); background: var(--yellow); }
+.modes button:disabled:not(.active) { color: #696861; }
 .messages { min-height: 380px; max-height: 58svh; padding: 24px; overflow-y: auto; }
 .message { display: grid; grid-template-columns: 70px minmax(0, 1fr); gap: 14px; padding: 16px 0; border-bottom: 1px dotted var(--line); }
 .message b { color: var(--yellow); font-size: 11px; font-weight: 400; }
 .message.user b { color: var(--muted); }
+.message-body { min-width: 0; }
 .message p { margin: 0; white-space: pre-wrap; font-size: 14px; line-height: 1.7; }
+.message figure { width: min(560px, 100%); margin: 18px 0 2px; }
+.message img { display: block; width: 100%; height: auto; border: 1px solid var(--line); background: var(--bg); }
+.message figcaption { margin-top: 8px; color: var(--muted); font-size: 10px; line-height: 1.5; }
 .settings { display: flex; gap: 24px; padding: 12px 24px; border-top: 1px solid var(--line); }
 .settings label { display: flex; align-items: center; gap: 9px; min-width: 0; }
 .settings span { color: var(--muted); font-size: 10px; }

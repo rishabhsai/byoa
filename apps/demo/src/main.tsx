@@ -1,20 +1,28 @@
 import { StrictMode, useEffect, useRef, useState, type FormEvent } from "react";
 import { createRoot } from "react-dom/client";
-import { BYOA, type BYOAModel, type DeviceLogin } from "byoa";
+import { BYOA, type BYOAItemNotification, type BYOAModel, type DeviceLogin } from "byoa";
 import "./styles.css";
 
 type Session = { endpoint: string; token: string };
-type Message = { id: string; role: "user" | "agent"; text: string };
+type Mode = "chat" | "image";
+type Message = { id: string; role: "user" | "agent"; text: string; image?: { src: string; prompt?: string } };
 type ThreadStart = { thread: { id: string } };
 type Delta = { delta?: string };
 type LoginResult = { success?: boolean; error?: string | null };
+
+function imageSource(result: string): string {
+  if (result.startsWith("data:") || result.startsWith("blob:") || result.startsWith("https://")) return result;
+  return `data:image/png;base64,${result}`;
+}
 
 function Demo() {
   const [phase, setPhase] = useState<"idle" | "connecting" | "login" | "ready" | "offline">("idle");
   const [login, setLogin] = useState<DeviceLogin>();
   const [messages, setMessages] = useState<Message[]>([
-    { id: "hello", role: "agent", text: "Connect your ChatGPT account, then send a message to a fresh read-only Codex thread." },
+    { id: "hello", role: "agent", text: "Connect ChatGPT, then try a text or image task on your own Codex account." },
   ]);
+  const [mode, setMode] = useState<Mode>("chat");
+  const [imageGeneration, setImageGeneration] = useState(false);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string>();
   const [running, setRunning] = useState(false);
@@ -35,8 +43,11 @@ function Demo() {
       setModels(available);
       setModel(preferred?.model ?? "");
       setEffort(preferred?.defaultReasoningEffort ?? "");
+      const capabilities = await client.models.capabilities();
+      setImageGeneration(capabilities.imageGeneration);
     } catch {
       setModels([]);
+      setImageGeneration(false);
     }
   };
 
@@ -68,6 +79,18 @@ function Demo() {
       client.addEventListener("turn/completed", () => {
         setRunning(false);
         responseRef.current = undefined;
+      });
+      client.addEventListener("item/completed", (event) => {
+        const { item } = (event as CustomEvent<BYOAItemNotification>).detail;
+        const responseId = responseRef.current;
+        if (!responseId || item.type !== "imageGeneration" || typeof item.result !== "string" || !item.result) return;
+        setMessages((current) => current.map((message) => message.id === responseId ? {
+          ...message,
+          image: {
+            src: imageSource(item.result as string),
+            ...(typeof item.revisedPrompt === "string" ? { prompt: item.revisedPrompt } : {}),
+          },
+        } : message));
       });
       await client.connect();
 
@@ -119,7 +142,10 @@ function Demo() {
         }) as ThreadStart;
         threadRef.current = started.thread.id;
       }
-      await client.startTurn(threadRef.current, text, {
+      const input = mode === "image"
+        ? `Generate an image from this prompt. Use the image generation tool.\n\n${text}`
+        : text;
+      await client.startTurn(threadRef.current, input, {
         ...(model ? { model } : {}),
         ...(effort ? { effort } : {}),
       });
@@ -136,7 +162,7 @@ function Demo() {
 
       <section className="demo-shell">
         <div className="demo-head">
-          <div><p>example app</p><h1>chat with your agent</h1></div>
+          <div><p>example app</p><h1>try your agent</h1></div>
           <span className={`runtime runtime-${phase}`}>{phase === "ready" ? "agent connected" : phase === "offline" ? "runner offline" : "read-only sandbox"}</span>
         </div>
 
@@ -159,8 +185,20 @@ function Demo() {
 
         {phase === "ready" ? (
           <div className="chat">
+            <div className="modes" aria-label="demo mode">
+              <button className={mode === "chat" ? "active" : ""} type="button" onClick={() => setMode("chat")} disabled={running}>text</button>
+              <button className={mode === "image" ? "active" : ""} type="button" onClick={() => setMode("image")} disabled={running || !imageGeneration}>image{imageGeneration ? "" : " / unavailable"}</button>
+            </div>
             <div className="messages" aria-live="polite">
-              {messages.map((message) => <div className={`message ${message.role}`} key={message.id}><b>{message.role === "agent" ? "agent" : "you"}</b><p>{message.text || "▌"}</p></div>)}
+              {messages.map((message) => (
+                <div className={`message ${message.role}`} key={message.id}>
+                  <b>{message.role === "agent" ? "agent" : "you"}</b>
+                  <div className="message-body">
+                    <p>{message.text || (message.image ? "" : "▌")}</p>
+                    {message.image ? <figure><img src={message.image.src} alt={message.image.prompt ?? "generated image"} /><figcaption>{message.image.prompt ?? "generated by codex"}</figcaption></figure> : null}
+                  </div>
+                </div>
+              ))}
             </div>
             {models.length ? (
               <div className="settings" aria-label="agent settings">
@@ -189,16 +227,16 @@ function Demo() {
               </div>
             ) : null}
             <form onSubmit={send}>
-              <label htmlFor="message">message</label>
-              <textarea id="message" value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="ask the agent something" rows={3} />
-              <button type="submit" disabled={running || !draft.trim()}>{running ? "running…" : "send"}</button>
+              <label htmlFor="message">{mode === "image" ? "prompt" : "message"}</label>
+              <textarea id="message" value={draft} onChange={(event) => setDraft(event.target.value)} placeholder={mode === "image" ? "a yellow race car in heavy rain, 35mm film" : "ask the agent something"} rows={3} />
+              <button type="submit" disabled={running || !draft.trim()}>{running ? "running…" : mode === "image" ? "generate" : "send"}</button>
             </form>
             {error ? <p className="error">{error}</p> : null}
           </div>
         ) : null}
       </section>
 
-      <footer><span>no shared api key</span><span>ephemeral thread / read-only sandbox</span></footer>
+      <footer><span>text + image / no shared api key</span><span>ephemeral thread / read-only sandbox</span></footer>
     </main>
   );
 }

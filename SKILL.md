@@ -14,6 +14,17 @@ BYOA runs a separate agent sandbox for each app user and workspace.
 3. Store the runner secret only in the developer's backend.
 4. Use `byoa/server` in the backend and `byoa` in the browser with short-lived session tokens.
 5. Use `byoa/react` only for the optional connection UI.
+6. Use `agent.threads`, `agent.turns`, `agent.workspace`, `agent.models`, `agent.mcp`, and `agent.extensions` for the typed runtime surface.
+7. Keep `agent.request()` available when a required app-server method has no typed wrapper.
+
+## runtime
+
+- Pass thread-specific behavior with `developerInstructions`.
+- Put durable repository behavior in `AGENTS.md`, skills, project config, or hooks.
+- Put files under `/workspace`; keep `CODEX_HOME` separate.
+- Use `outputSchema` for machine-readable turn output.
+- Use authenticated MCP for durable or privileged tools.
+- Dynamic tools require `experimentalApi: true`. Browser handlers are only for browser-safe work.
 
 ## security
 

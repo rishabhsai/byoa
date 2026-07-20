@@ -1,6 +1,8 @@
 # demo
 
-The demo is a real BYOA client, not a simulated chat. It requests a short-lived session from a Pages Function, starts Codex device login, reads the user's available models, creates an ephemeral read-only thread, and renders streamed agent message deltas.
+The demo is a real BYOA client, not a simulation. It requests a short-lived session from a Pages Function, starts Codex device login, reads the user's models and provider capabilities, creates an ephemeral read-only thread, and renders streamed text and image-generation items.
+
+Text mode renders `item/agentMessage/delta`. Image mode asks Codex to use its built-in image-generation tool and renders the final `imageGeneration` item from `item/completed`. The image option stays disabled when the signed-in provider reports no image-generation capability.
 
 It remains offline until the runner is deployed and these Pages secrets are configured:
 

@@ -42,7 +42,24 @@ npm run dev
 
 The Cloudflare runner requires Workers Paid and Containers access. See [docs/deploy.md](docs/deploy.md).
 
-The example chat app is deployed separately and reads model choices from the signed-in user's Codex account. See [docs/demo.md](docs/demo.md).
+The example app is deployed separately. It streams text, reads model choices from the signed-in user's Codex account, and renders Codex image-generation items. See [docs/demo.md](docs/demo.md).
+
+## agent runtime
+
+BYOA is not a chat abstraction. The browser SDK exposes typed thread, turn, workspace, model, MCP, skill, hook, and server-request helpers. Raw `request()` and protocol events remain available when an app needs more of Codex app-server.
+
+```ts
+await agent.workspace.write("/workspace/input.txt", input);
+const { thread } = await agent.threads.start({
+  cwd: "/workspace",
+  developerInstructions: "return a short risk report",
+});
+await agent.turns.start(thread.id, "review input.txt", {
+  outputSchema: riskReportSchema,
+});
+```
+
+Experimental dynamic tools can be registered on `thread/start`. Browser-safe handlers use `agent.onToolCall()`. Privileged tools belong behind the developer backend or an authenticated MCP server; the signed backend tool router is not finished.
 
 Production releases run through [GitHub Actions](.github/workflows/deploy.yml), including the Docker build for the Cloudflare runner. Local Docker is not required to release this repository.
 

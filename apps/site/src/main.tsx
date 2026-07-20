@@ -29,12 +29,33 @@ function Header() {
       <a className="wordmark" href="/">byoa</a>
       <nav aria-label="main navigation">
         <a href="/#how">how it works</a>
+        <a href="/#runtime">runtime</a>
         <a href="/#setup">setup</a>
         <a href="/docs">docs</a>
         <a className="nav-demo" href={demoUrl}>demo ↗</a>
         <a href="https://github.com/rishabhsai/byoa">github</a>
       </nav>
     </header>
+  );
+}
+
+function RuntimeDiagram() {
+  return (
+    <div className="runtime-diagram" aria-label="BYOA agent runtime inputs and outputs">
+      <div className="runtime-side">
+        <span>inputs</span>
+        <b>text</b><b>images</b><b>files</b><b>audio</b>
+      </div>
+      <div className="runtime-core">
+        <span>your user&apos;s sandbox</span>
+        <strong>codex app-server</strong>
+        <small>instructions · skills · tools · hooks</small>
+      </div>
+      <div className="runtime-side">
+        <span>outputs</span>
+        <b>events</b><b>files</b><b>json</b><b>images</b>
+      </div>
+    </div>
   );
 }
 
@@ -95,6 +116,23 @@ function Landing() {
 
       <hr />
 
+      <section id="runtime">
+        <h2>not just chat</h2>
+        <p>Chat is one UI. BYOA exposes the agent runtime underneath it.</p>
+        <RuntimeDiagram />
+        <div className="capability-list">
+          <div><strong>files</strong><span>upload, read, write, watch</span></div>
+          <div><strong>tools</strong><span>app functions and MCP servers</span></div>
+          <div><strong>instructions</strong><span>per thread or kept in the repo</span></div>
+          <div><strong>hooks</strong><span>before and after agent actions</span></div>
+          <div><strong>structured output</strong><span>JSON Schema per turn</span></div>
+          <div><strong>events</strong><span>render any interface you want</span></div>
+        </div>
+        <p className="section-link"><a href="/docs#runtime">read the runtime docs →</a></p>
+      </section>
+
+      <hr />
+
       <section id="setup">
         <h2>setup</h2>
         <p>Requirements: Node 20+, Workers Paid, and Containers enabled. The command uses Wrangler OAuth locally or a scoped Cloudflare token in CI. Never paste a global Cloudflare API key into the browser.</p>
@@ -134,7 +172,7 @@ const agent = new BYOA({
 
 await agent.connect();
 const login = await agent.startDeviceLogin();`}</code></pre>
-          <p>Open the returned verification URL, show the user code, then listen for <code>account/login/completed</code>. After that, start threads and stream turn events.</p>
+          <p>Open the returned verification URL, show the user code, then listen for <code>account/login/completed</code>. Use <code>agent.threads</code>, <code>agent.turns</code>, <code>agent.workspace</code>, and the event stream to build your interface.</p>
         </div>
       </section>
 
@@ -208,9 +246,63 @@ item/agentMessage/delta … turn/completed`}</code></pre>
         </section>
 
         <hr />
+        <section id="runtime">
+          <h2>agent runtime</h2>
+          <p>The SDK keeps the full app-server surface. Use the typed helpers for common work and <code>request()</code> for protocol methods BYOA has not wrapped yet.</p>
+          <pre><code>{`const agent = new BYOA({
+  endpoint: session.endpoint,
+  token: session.token,
+  experimentalApi: true,
+});
+
+await agent.connect();
+await agent.workspace.write("/workspace/invoice.txt", invoice);
+
+const { thread } = await agent.threads.start({
+  cwd: "/workspace",
+  developerInstructions: "return a short risk report",
+  sandbox: "workspace-write",
+});
+
+await agent.turns.start(thread.id, [
+  { type: "text", text: "review the invoice" },
+  { type: "localImage", path: "/workspace/scan.png" },
+], {
+  outputSchema: riskReportSchema,
+});`}</code></pre>
+
+          <div className="doc-grid">
+            <div><h3>files</h3><p><code>agent.workspace</code> reads and writes the sandbox filesystem. Put user files under <code>/workspace</code>. Keep <code>CODEX_HOME</code> separate.</p></div>
+            <div><h3>prompts</h3><p>Use thread instructions for app behavior, <code>AGENTS.md</code> for repo rules, skills for reusable workflows, and hooks for lifecycle enforcement.</p></div>
+            <div><h3>output</h3><p>Pass text, inline images, local files, or audio. Stream items as they run. Add <code>outputSchema</code> when your app needs JSON.</p></div>
+            <div><h3>images</h3><p>Check <code>agent.models.capabilities()</code>. Image-generation results arrive as <code>imageGeneration</code> items on <code>item/completed</code>.</p></div>
+          </div>
+        </section>
+
+        <hr />
+        <section id="tools">
+          <h2>custom tools</h2>
+          <p>For a small app-owned tool set, start a thread with experimental <code>dynamicTools</code>. Codex sends <code>item/tool/call</code> back to the client. Use MCP for durable tools shared across products.</p>
+          <pre><code>{`const stop = agent.onToolCall(async (call) => {
+  if (call.tool !== "lookup_order") throw new Error("unknown tool");
+
+  // Browser-safe example. Put privileged work behind your backend.
+  const order = await fetch("/api/tools/lookup-order", {
+    method: "POST",
+    body: JSON.stringify(call.arguments),
+  }).then(r => r.json());
+  return {
+    contentItems: [{ type: "inputText", text: JSON.stringify(order) }],
+    success: true,
+  };
+});`}</code></pre>
+          <p>Never place database credentials or third-party secrets in a browser handler. The signed server-side tool router is still a BYOA milestone.</p>
+        </section>
+
+        <hr />
         <section id="limits">
           <h2>alpha limits</h2>
-          <p>Cloudflare Containers are still a beta dependency. The current runner filesystem is ephemeral, the npm package still needs its first publish, and hostile-workload isolation needs a production security review. Do not market the alpha as durable or generally available yet.</p>
+          <p>The current runner filesystem is ephemeral, dynamic tools use Codex&apos;s experimental protocol, the npm package still needs its first publish, and hostile-workload isolation needs a production security review. Durable account storage and the server-side tool router are not done.</p>
         </section>
       </article>
       <footer><span>byoa docs</span><a href="/">home</a></footer>
