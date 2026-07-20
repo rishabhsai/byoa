@@ -32,3 +32,9 @@ Dynamic tools are experimental in Codex. The app-server asks its connected clien
 - R2 (planned): separate encrypted backups for workspace and credential state.
 
 The alpha runner is ephemeral. Durable storage is intentionally not claimed until credential and workspace persistence can be isolated, encrypted, and reviewed.
+
+## request controls
+
+The application backend is the only caller of `POST /v1/sessions`. It authenticates with `BYOA_APP_SECRET`; the browser never sees that secret. Session tokens expire after 60–900 seconds and authorize one derived sandbox identity.
+
+The production Worker has separate session and WebSocket rate-limit bindings, a secret-backed emergency stop, and structured observability. The public demo additionally verifies a single-use Turnstile token before asking the runner to create a session.

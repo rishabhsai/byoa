@@ -2,7 +2,11 @@ interface Env {
   BYOA_URL?: string;
   BYOA_APP_SECRET?: string;
   DEMO_COOKIE_SECRET?: string;
+  TURNSTILE_VERIFY_URL?: string;
 }
+
+type SessionRequest = { turnstileToken?: string };
+type TurnstileResult = { success?: boolean; action?: string; hostname?: string; "error-codes"?: string[] };
 
 const cookieName = "__Host-byoa_demo";
 const encoder = new TextEncoder();
@@ -57,9 +61,36 @@ function json(value: unknown, init: ResponseInit = {}): Response {
   return new Response(JSON.stringify(value), { ...init, headers });
 }
 
+async function verifyTurnstile(request: Request, verifyUrl: string): Promise<boolean> {
+  let input: SessionRequest;
+  try {
+    input = await request.json<SessionRequest>();
+  } catch {
+    return false;
+  }
+
+  if (typeof input.turnstileToken !== "string" || !input.turnstileToken || input.turnstileToken.length > 2048) return false;
+  const response = await fetch(verifyUrl, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      token: input.turnstileToken,
+      remoteip: request.headers.get("CF-Connecting-IP") ?? undefined,
+      idempotency_key: crypto.randomUUID(),
+    }),
+  });
+  if (!response.ok) return false;
+  const result = await response.json<TurnstileResult>();
+  return result.success === true && result.action === "turnstile-spin-v1";
+}
+
 export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
-  if (!env.BYOA_URL || !env.BYOA_APP_SECRET || !env.DEMO_COOKIE_SECRET) {
+  if (!env.BYOA_URL || !env.BYOA_APP_SECRET || !env.DEMO_COOKIE_SECRET || !env.TURNSTILE_VERIFY_URL) {
     return json({ error: "The demo runner is not online yet." }, { status: 503 });
+  }
+
+  if (!await verifyTurnstile(request, env.TURNSTILE_VERIFY_URL)) {
+    return json({ error: "Please complete the security check and try again." }, { status: 403 });
   }
 
   const identity = await identityFrom(request, env.DEMO_COOKIE_SECRET);
@@ -77,7 +108,16 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     }),
   });
 
-  if (!response.ok) return json({ error: "The demo runner did not create a session." }, { status: 502 });
+  if (!response.ok) {
+    const status = response.status === 429 ? 429 : 502;
+    const headers = new Headers();
+    const retryAfter = response.headers.get("retry-after");
+    if (retryAfter) headers.set("retry-after", retryAfter);
+    return json(
+      { error: status === 429 ? "Too many sessions. Try again in a minute." : "The demo runner did not create a session." },
+      { status, headers },
+    );
+  }
   const session = await response.json();
   const headers = new Headers();
   if (identity.fresh) {

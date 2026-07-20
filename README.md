@@ -4,10 +4,10 @@ bring your own agent.
 
 BYOA runs your users' Codex app-server in the cloud. They sign in with ChatGPT. You do not carry one shared API bill.
 
-[site](https://byoa-3ln.pages.dev) · [demo](https://byoa-demo.pages.dev) · [agent setup](https://byoa-3ln.pages.dev/agent)
+[site](https://byoa.lol) · [demo](https://demo.byoa.lol) · [agent setup](https://byoa.lol/agent)
 
 ```bash
-curl -fsSL https://byoa-3ln.pages.dev/agent
+curl -fsSL https://byoa.lol/agent
 ```
 
 ## repository
@@ -31,7 +31,7 @@ npm install byoa
 
 Import the browser client from `byoa`, the trusted backend helper from `byoa/server`, or the optional React connection UI from `byoa/react`.
 
-The `byoa` package is ready for its first npm publish. This machine still needs npm login before that command becomes available from the public registry.
+The package name is `byoa`. The deploy command carries the runner template, so app developers do not clone this repository.
 
 ## repository development
 
@@ -73,6 +73,8 @@ npm run deploy
 
 The command creates the runner secret when needed and deploys into your Cloudflare account. A scoped `CLOUDFLARE_API_TOKEN` also works in CI; no global API key belongs in BYOA.
 
+The runner limits session creation to 5 per user per minute and connection attempts to 20 per sandbox per minute. Set the Worker secret `BYOA_DISABLED=1` for an emergency stop; health checks remain available. See [docs/launch.md](docs/launch.md) for the production checklist and domain setup.
+
 ## status
 
-early. the site and protocol surface are usable; hosted Codex authentication and persistence still require production validation before release.
+0.1.0 is an alpha release. the site, npm package, protected demo, and runner are usable. runner files and Codex login state are ephemeral until the R2 persistence design is implemented and reviewed.

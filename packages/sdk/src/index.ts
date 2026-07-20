@@ -270,7 +270,7 @@ export class BYOA extends EventTarget {
     this.token = options.token;
     this.clientName = options.clientName ?? "byoa-sdk";
     this.clientTitle = options.clientTitle ?? "BYOA SDK";
-    this.clientVersion = options.clientVersion ?? "0.0.1";
+    this.clientVersion = options.clientVersion ?? "0.1.0";
     this.experimentalApi = options.experimentalApi ?? false;
   }
 

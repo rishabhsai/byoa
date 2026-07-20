@@ -12,6 +12,8 @@ The runner executes model-directed shell commands. Treat every repository, promp
 6. explicit approval for privileged actions
 7. short-lived browser session tokens
 8. privileged custom tools run behind a trusted backend or authenticated MCP server
+9. public paid-compute entry points require server-verified Turnstile
+10. session and connection routes are rate limited independently
 
 ## custom tools
 
@@ -20,3 +22,11 @@ Codex dynamic tools are bidirectional: app-server sends `item/tool/call` to its 
 Until the signed backend tool router is implemented, use authenticated MCP for privileged tools or build an app backend endpoint that independently authenticates the user, validates every argument, and derives tenant identity from the server session rather than tool input.
 
 Before release, validate that a hostile prompt cannot read `CODEX_HOME`, other sandboxes, Worker secrets, or R2 credentials.
+
+## operations
+
+Structured Worker logs must not include prompts, protocol payloads, credentials, or full external user IDs. The runner logs lifecycle outcomes against a truncated derived sandbox identifier.
+
+`BYOA_DISABLED=1` is the emergency stop. It blocks new session and connection requests with `503` while leaving health checks online. Cloudflare Rate Limiting bindings return `429` and `Retry-After: 60`; they reduce abuse but are not a billing ledger or strict quota system.
+
+Turnstile is defense in depth for the public demo. The browser sitekey is public. The secret exists only in the managed siteverify Worker, and the demo Pages Function accepts a token only when server-side verification succeeds with action `turnstile-spin-v1`.

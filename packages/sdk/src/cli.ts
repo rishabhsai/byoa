@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 const command = process.argv[2];
 
 if (command === "--version" || command === "-v") {
-  console.log("0.0.1");
+  console.log("0.1.0");
   process.exit(0);
 }
 

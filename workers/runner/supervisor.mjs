@@ -46,8 +46,7 @@ sockets.on("connection", (socket) => {
     }
   });
 
-  codex.stderr.setEncoding("utf8");
-  codex.stderr.on("data", (chunk) => console.error(`[codex] ${String(chunk).trimEnd()}`));
+  codex.stderr.resume();
 
   socket.on("message", (message) => {
     if (codex.stdin.writable) codex.stdin.write(`${String(message)}\n`);

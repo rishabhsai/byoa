@@ -1,6 +1,6 @@
 {
   "name": "@byoa/runner",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -13,7 +13,6 @@
     "@cloudflare/sandbox": "0.12.3"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "latest",
     "typescript": "^7.0.2",
     "wrangler": "4.112.0"
   }

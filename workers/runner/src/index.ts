@@ -1,10 +1,10 @@
-import { getSandbox, type Sandbox as SandboxDurableObject } from "@cloudflare/sandbox";
+import { getSandbox } from "@cloudflare/sandbox";
 export { Sandbox } from "@cloudflare/sandbox";
 
-interface Env {
-  Sandbox: DurableObjectNamespace<SandboxDurableObject>;
+type RunnerEnv = Env & {
   BYOA_APP_SECRET: string;
-}
+  BYOA_DISABLED?: string;
+};
 
 type SessionClaims = {
   sandboxId: string;
@@ -23,7 +23,21 @@ const encoder = new TextEncoder();
 function json(value: unknown, init: ResponseInit = {}): Response {
   const headers = new Headers(init.headers);
   headers.set("content-type", "application/json; charset=utf-8");
+  headers.set("cache-control", "no-store");
   return new Response(JSON.stringify(value), { ...init, headers });
+}
+
+function event(name: string, fields: Record<string, string | number> = {}): void {
+  console.log(JSON.stringify({ event: name, ...fields }));
+}
+
+function unavailable(): Response {
+  return json({ error: "runner temporarily disabled" }, { status: 503, headers: { "retry-after": "60" } });
+}
+
+function limited(route: string): Response {
+  event("rate_limited", { route });
+  return json({ error: "rate limit exceeded" }, { status: 429, headers: { "retry-after": "60" } });
 }
 
 function base64url(bytes: Uint8Array): string {
@@ -67,6 +81,12 @@ async function sandboxIdFor(input: SessionInput): Promise<string> {
   return `byoa-${hex.slice(0, 40)}`;
 }
 
+async function sessionRateKey(input: SessionInput): Promise<string> {
+  const source = `${input.installationId}\0${input.userId}`;
+  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", encoder.encode(source)));
+  return base64url(digest);
+}
+
 async function issueToken(secret: string, claims: SessionClaims): Promise<string> {
   const payload = base64url(encoder.encode(JSON.stringify(claims)));
   const signature = base64url(await hmac(secret, payload));
@@ -94,7 +114,7 @@ function bearer(request: Request): string | null {
   return value?.startsWith("Bearer ") ? value.slice(7) : null;
 }
 
-async function createSession(request: Request, env: Env): Promise<Response> {
+async function createSession(request: Request, env: RunnerEnv): Promise<Response> {
   const authorization = bearer(request);
   if (!env.BYOA_APP_SECRET || !authorization || !await secureStringEqual(authorization, env.BYOA_APP_SECRET)) {
     return json({ error: "unauthorized" }, { status: 401 });
@@ -111,17 +131,23 @@ async function createSession(request: Request, env: Env): Promise<Response> {
     return json({ error: "installationId, userId, and workspaceId are required" }, { status: 400 });
   }
 
+  const rate = await env.SESSION_RATE_LIMITER.limit({ key: await sessionRateKey(input) });
+  if (!rate.success) return limited("sessions");
+
   const ttl = Math.min(Math.max(input.ttlSeconds ?? 300, 60), 900);
   const expiresAt = Math.floor(Date.now() / 1000) + ttl;
+  const sandboxId = await sandboxIdFor(input);
   const token = await issueToken(env.BYOA_APP_SECRET, {
-    sandboxId: await sandboxIdFor(input),
+    sandboxId,
     exp: expiresAt,
   });
+
+  event("session_created", { sandbox: sandboxId.slice(-12), ttl });
 
   return json({ token, expiresAt, endpoint: new URL(request.url).origin });
 }
 
-async function connect(request: Request, env: Env): Promise<Response> {
+async function connect(request: Request, env: RunnerEnv): Promise<Response> {
   if (request.headers.get("upgrade")?.toLowerCase() !== "websocket") {
     return json({ error: "websocket required" }, { status: 426 });
   }
@@ -129,6 +155,9 @@ async function connect(request: Request, env: Env): Promise<Response> {
   const token = new URL(request.url).searchParams.get("token");
   const claims = token ? await verifyToken(env.BYOA_APP_SECRET, token) : null;
   if (!claims) return json({ error: "invalid or expired session" }, { status: 401 });
+
+  const rate = await env.CONNECT_RATE_LIMITER.limit({ key: claims.sandboxId });
+  if (!rate.success) return limited("connect");
 
   const sandbox = getSandbox(env.Sandbox, claims.sandboxId, { sleepAfter: "10m" });
   const processes = await sandbox.listProcesses();
@@ -142,17 +171,17 @@ async function connect(request: Request, env: Env): Promise<Response> {
       },
       autoCleanup: true,
     });
+    event("supervisor_started", { sandbox: claims.sandboxId.slice(-12) });
   }
 
   try {
     await supervisor.waitForPort(8787, { path: "/health", timeout: 20_000 });
   } catch (error) {
-    const logs = await supervisor.getLogs().catch(() => ({ stdout: "", stderr: "logs unavailable" }));
-    console.error("byoa supervisor failed", {
+    console.error(JSON.stringify({
+      event: "supervisor_failed",
+      sandbox: claims.sandboxId.slice(-12),
       error: error instanceof Error ? error.message : String(error),
-      stdout: logs.stdout,
-      stderr: logs.stderr,
-    });
+    }));
     throw error;
   }
 
@@ -160,11 +189,12 @@ async function connect(request: Request, env: Env): Promise<Response> {
 }
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: RunnerEnv): Promise<Response> {
     const url = new URL(request.url);
     if (request.method === "GET" && url.pathname === "/v1/health") {
-      return json({ ok: true, service: "byoa-runner" });
+      return json({ ok: true, service: "byoa-runner", acceptingSessions: env.BYOA_DISABLED !== "1" });
     }
+    if (env.BYOA_DISABLED === "1") return unavailable();
     if (request.method === "POST" && url.pathname === "/v1/sessions") {
       return createSession(request, env);
     }
@@ -173,4 +203,4 @@ export default {
     }
     return json({ error: "not found" }, { status: 404 });
   },
-} satisfies ExportedHandler<Env>;
+} satisfies ExportedHandler<RunnerEnv>;

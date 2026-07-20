@@ -1,6 +1,6 @@
 {
   "name": "byoa",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Run user-authorized Codex app-servers in your Cloudflare account",
   "type": "module",
   "sideEffects": false,
@@ -19,9 +19,9 @@
     }
   },
   "bin": {
-    "byoa": "./dist/cli.js"
+    "byoa": "dist/cli.js"
   },
-  "files": ["dist"],
+  "files": ["dist", "!dist/*.test.*"],
   "scripts": {
     "build": "tsc -p tsconfig.json && node scripts/copy-runner.mjs",
     "check": "tsc -p tsconfig.json --noEmit",

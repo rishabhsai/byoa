@@ -32,6 +32,8 @@ jobs:
       - run: npm run check
       - run: npm run build --workspace @byoa/site
       - run: npm run build --workspace @byoa/demo
+        env:
+          VITE_TURNSTILE_SITE_KEY: ${{ vars.TURNSTILE_SITE_KEY }}
 
       - name: deploy runner
         run: npx wrangler deploy --config workers/runner/wrangler.jsonc

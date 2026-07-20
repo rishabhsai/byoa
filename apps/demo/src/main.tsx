@@ -10,6 +10,75 @@ type ThreadStart = { thread: { id: string } };
 type Delta = { delta?: string };
 type LoginResult = { success?: boolean; error?: string | null };
 
+type TurnstileApi = {
+  render(container: HTMLElement, options: {
+    sitekey: string;
+    action: string;
+    theme: "dark";
+    size: "flexible";
+    callback(token: string): void;
+    "expired-callback"(): void;
+    "error-callback"(): void;
+  }): string;
+  reset(widgetId: string): void;
+  remove(widgetId: string): void;
+};
+
+declare global {
+  interface Window { turnstile?: TurnstileApi }
+}
+
+const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined;
+
+function TurnstileGate({ onToken, resetKey }: { onToken(token: string | undefined): void; resetKey: number }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const widgetRef = useRef<string | undefined>(undefined);
+
+  useEffect(() => {
+    if (!turnstileSiteKey || !containerRef.current) return;
+    let cancelled = false;
+    const render = () => {
+      if (cancelled || !containerRef.current || !window.turnstile || widgetRef.current) return;
+      widgetRef.current = window.turnstile.render(containerRef.current, {
+        sitekey: turnstileSiteKey,
+        action: "turnstile-spin-v1",
+        theme: "dark",
+        size: "flexible",
+        callback: (token) => onToken(token),
+        "expired-callback": () => onToken(undefined),
+        "error-callback": () => onToken(undefined),
+      });
+    };
+
+    const existing = document.querySelector<HTMLScriptElement>('script[data-byoa-turnstile]');
+    if (existing) {
+      if (window.turnstile) render();
+      else existing.addEventListener("load", render, { once: true });
+    } else {
+      const script = document.createElement("script");
+      script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+      script.async = true;
+      script.defer = true;
+      script.dataset.byoaTurnstile = "";
+      script.addEventListener("load", render, { once: true });
+      document.head.appendChild(script);
+    }
+
+    return () => {
+      cancelled = true;
+      if (widgetRef.current && window.turnstile) window.turnstile.remove(widgetRef.current);
+      widgetRef.current = undefined;
+    };
+  }, [onToken]);
+
+  useEffect(() => {
+    if (widgetRef.current && window.turnstile) window.turnstile.reset(widgetRef.current);
+  }, [resetKey]);
+
+  if (!turnstileSiteKey) return <p className="error">security check is not configured.</p>;
+  return <div className="turnstile-slot" ref={containerRef} data-action="turnstile-spin-v1" />;
+}
+
 function imageSource(result: string): string {
   if (result.startsWith("data:") || result.startsWith("blob:") || result.startsWith("https://")) return result;
   return `data:image/png;base64,${result}`;
@@ -26,6 +95,8 @@ function Demo() {
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string>();
   const [running, setRunning] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string>();
+  const [turnstileReset, setTurnstileReset] = useState(0);
   const [models, setModels] = useState<BYOAModel[]>([]);
   const [model, setModel] = useState("");
   const [effort, setEffort] = useState("");
@@ -57,10 +128,17 @@ function Demo() {
   };
 
   const connect = async () => {
+    if (!turnstileToken) return;
     setPhase("connecting");
     setError(undefined);
     try {
-      const response = await fetch("/api/session", { method: "POST" });
+      const response = await fetch("/api/session", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ turnstileToken }),
+      });
+      setTurnstileToken(undefined);
+      setTurnstileReset((value) => value + 1);
       const payload = await response.json() as Session & { error?: string };
       if (!response.ok) {
         setPhase("offline");
@@ -113,6 +191,8 @@ function Demo() {
         ready(client);
       }, { once: true });
     } catch (cause) {
+      setTurnstileToken(undefined);
+      setTurnstileReset((value) => value + 1);
       setPhase("offline");
       setError(cause instanceof Error ? cause.message : "The demo could not connect.");
     }
@@ -158,7 +238,7 @@ function Demo() {
 
   return (
     <main>
-      <header><a href="https://byoa-3ln.pages.dev">byoa</a><span>/ demo</span><a href="https://github.com/rishabhsai/byoa">source</a></header>
+      <header><a href="https://byoa.lol">byoa</a><span>/ demo</span><a href="https://github.com/rishabhsai/byoa">source</a></header>
 
       <section className="demo-shell">
         <div className="demo-head">
@@ -169,8 +249,9 @@ function Demo() {
         {phase === "idle" || phase === "connecting" || phase === "offline" ? (
           <div className="connect-panel">
             <p>This is the smallest BYOA integration: one anonymous app session, one isolated runner, and one user-authorized Codex account.</p>
-            <button type="button" onClick={connect} disabled={phase === "connecting"}>{phase === "connecting" ? "starting runner…" : "connect chatgpt"}</button>
-            {error ? <p className="error">{error} The interface is live; the container backend is still being brought online.</p> : null}
+            <TurnstileGate onToken={setTurnstileToken} resetKey={turnstileReset} />
+            <button type="button" onClick={connect} disabled={phase === "connecting" || !turnstileToken}>{phase === "connecting" ? "starting runner…" : "connect chatgpt"}</button>
+            {error ? <p className="error">{error}</p> : null}
           </div>
         ) : null}
 

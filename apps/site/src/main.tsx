@@ -2,8 +2,8 @@ import { StrictMode, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
 
-const siteUrl = "https://byoa-3ln.pages.dev";
-const demoUrl = "https://byoa-demo.pages.dev";
+const siteUrl = "https://byoa.lol";
+const demoUrl = "https://demo.byoa.lol";
 const agentCommand = `curl -fsSL ${siteUrl}/agent`;
 
 function CopyCommand() {
@@ -182,12 +182,12 @@ const login = await agent.startDeviceLogin();`}</code></pre>
         <h2>current status</h2>
         <dl className="status-list">
           <div><dt>landing + docs</dt><dd>live</dd></div>
-          <div><dt>npm package</dt><dd>built / publish login needed</dd></div>
-          <div><dt>cloudflare runner</dt><dd>control plane live / container alpha</dd></div>
+          <div><dt>npm package</dt><dd>0.1.0 / release ready</dd></div>
+          <div><dt>cloudflare runner</dt><dd>live / rate limited / container alpha</dd></div>
           <div><dt>durable agent credentials</dt><dd>not done</dd></div>
           <div><dt>install path</dt><dd>npm install byoa / npx byoa deploy</dd></div>
         </dl>
-        <p>The demo interface and session flow reach the live runner. The Codex handshake and durable account storage are still alpha.</p>
+        <p>The public demo uses Turnstile, short-lived sessions, and per-user runner limits. Codex account persistence and hostile-workload isolation are still alpha.</p>
       </section>
 
       <hr />
@@ -311,7 +311,7 @@ const stop = agent.onToolCall(async (call) => {
         <hr />
         <section id="limits">
           <h2>alpha limits</h2>
-          <p>The current runner filesystem is ephemeral, dynamic tools use Codex&apos;s experimental protocol, the npm package still needs its first publish, and hostile-workload isolation needs a production security review. Durable account storage and the server-side tool router are not done.</p>
+          <p>The current runner filesystem is ephemeral, dynamic tools use Codex&apos;s experimental protocol, and hostile-workload isolation needs a production security review. Durable account storage and the server-side tool router are not done.</p>
         </section>
       </article>
       <footer><span>byoa docs</span><a href="/">home</a></footer>

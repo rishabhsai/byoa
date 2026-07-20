@@ -64,4 +64,4 @@ Keep privileged tools behind your backend or an authenticated MCP server.
 
 The deploy command requires Node.js 20+, Cloudflare Workers Paid, Containers, and Wrangler OAuth or `CLOUDFLARE_API_TOKEN`.
 
-[docs](https://byoa-3ln.pages.dev/docs) · [demo](https://byoa-demo.pages.dev) · [source](https://github.com/rishabhsai/byoa)
+[docs](https://byoa.lol/docs) · [demo](https://demo.byoa.lol) · [source](https://github.com/rishabhsai/byoa)

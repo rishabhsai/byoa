@@ -32,6 +32,7 @@ footer { justify-content: space-between; border-top: 1px solid var(--line); }
 
 .connect-panel { max-width: 660px; padding: 28px; border: 1px solid var(--line); background: var(--panel); font-size: 14px; line-height: 1.7; }
 .connect-panel > p:first-child { margin-top: 0; }
+.turnstile-slot { width: min(100%, 300px); min-height: 65px; margin: 18px 0; }
 button, .connect-link { display: inline-block; padding: 11px 14px; border: 1px solid var(--yellow); color: var(--bg); background: var(--yellow); cursor: pointer; text-decoration: none; }
 button:hover, button:focus-visible, .connect-link:hover, .connect-link:focus-visible { color: var(--yellow); background: transparent; outline: 0; }
 button:disabled { cursor: not-allowed; opacity: .5; }
