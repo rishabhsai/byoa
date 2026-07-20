@@ -4,6 +4,8 @@ The demo is a real BYOA client, not a simulated chat. It requests a short-lived 
 
 It remains offline until the runner is deployed and these Pages secrets are configured:
 
+The current Cloudflare account does not have Workers Paid, so Cloudflare rejects the container rollout. The image itself builds successfully. Enable Workers Paid before configuring the secrets below.
+
 ```bash
 npx wrangler pages secret put BYOA_URL --project-name=byoa-demo
 npx wrangler pages secret put BYOA_APP_SECRET --project-name=byoa-demo

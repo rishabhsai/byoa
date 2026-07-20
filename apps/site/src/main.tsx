@@ -146,7 +146,7 @@ const login = await agent.startDeviceLogin();`}</code></pre>
         <dl className="status-list">
           <div><dt>landing + docs</dt><dd>live</dd></div>
           <div><dt>sdk + react bindings</dt><dd>source alpha</dd></div>
-          <div><dt>cloudflare runner</dt><dd>builds, needs live validation</dd></div>
+          <div><dt>cloudflare runner</dt><dd>image builds / Workers Paid required</dd></div>
           <div><dt>durable agent credentials</dt><dd>not done</dd></div>
           <div><dt>npm packages</dt><dd>not published</dd></div>
         </dl>
