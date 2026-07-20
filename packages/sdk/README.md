@@ -45,6 +45,15 @@ Dynamic tools use Codex's experimental app-server API:
 ```ts
 const client = new BYOA({ ...session, experimentalApi: true });
 
+const { thread } = await client.threads.start({
+  dynamicTools: [{
+    type: "function",
+    name: "lookup_order",
+    description: "look up one order",
+    inputSchema: { type: "object", properties: { id: { type: "string" } } },
+  }],
+});
+
 client.onToolCall(async (call) => ({
   contentItems: [{ type: "inputText", text: await runBrowserSafeTool(call) }],
   success: true,

@@ -283,7 +283,16 @@ await agent.turns.start(thread.id, [
         <section id="tools">
           <h2>custom tools</h2>
           <p>For a small app-owned tool set, start a thread with experimental <code>dynamicTools</code>. Codex sends <code>item/tool/call</code> back to the client. Use MCP for durable tools shared across products.</p>
-          <pre><code>{`const stop = agent.onToolCall(async (call) => {
+          <pre><code>{`const { thread } = await agent.threads.start({
+  dynamicTools: [{
+    type: "function",
+    name: "lookup_order",
+    description: "look up one order",
+    inputSchema: { type: "object", properties: { id: { type: "string" } } },
+  }],
+});
+
+const stop = agent.onToolCall(async (call) => {
   if (call.tool !== "lookup_order") throw new Error("unknown tool");
 
   // Browser-safe example. Put privileged work behind your backend.
