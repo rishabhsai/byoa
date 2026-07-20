@@ -10,8 +10,8 @@
     "workers/*"
   ],
   "scripts": {
-    "build": "npm run build --workspace @byoa/sdk && npm run build --workspace @byoa/react && npm run build --workspace @byoa/site && npm run build --workspace @byoa/runner",
-    "check": "npm run build --workspace @byoa/sdk && npm run check --workspace @byoa/sdk && npm run check --workspace @byoa/react && npm run check --workspace @byoa/site && npm run check --workspace @byoa/runner",
+    "build": "npm run build --workspace @byoa/sdk && npm run build --workspace @byoa/react && npm run build --workspace @byoa/site && npm run build --workspace @byoa/demo && npm run build --workspace @byoa/runner",
+    "check": "npm run build --workspace @byoa/sdk && npm run check --workspace @byoa/sdk && npm run check --workspace @byoa/react && npm run check --workspace @byoa/site && npm run check --workspace @byoa/demo && npm run check --workspace @byoa/runner",
     "deploy": "node scripts/deploy.mjs",
     "dev": "npm run dev --workspace @byoa/site",
     "test": "npm run test --workspaces --if-present"

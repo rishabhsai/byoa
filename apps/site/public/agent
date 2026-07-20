@@ -11,7 +11,7 @@ npm install
 npm run check
 ```
 
-Read `AGENTS.md`, `docs/architecture.md`, `docs/deploy.md`, and `docs/security.md` before changing the integration.
+Read `AGENTS.md`, `docs/architecture.md`, `docs/deploy.md`, `docs/demo.md`, and `docs/security.md` before changing the integration.
 
 ## deploy the runner
 
@@ -26,6 +26,8 @@ The deploy command creates `BYOA_APP_SECRET` when one is not provided. Save it i
 ## add the client
 
 Use `@byoa/sdk` for the protocol client. Use `@byoa/react` only if the app uses React. Packages are currently consumed from this repository and are not published to npm yet.
+
+The example chat integration lives in `apps/demo` and is deployed at `https://byoa-demo.pages.dev`. Its connect flow remains explicitly offline until a production runner and its Pages secrets are configured.
 
 ## do not improvise around blockers
 

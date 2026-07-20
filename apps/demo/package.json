@@ -1,5 +1,5 @@
 {
-  "name": "@byoa/site",
+  "name": "@byoa/demo",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -9,12 +9,14 @@
     "check": "tsc -p tsconfig.json --noEmit --incremental false --pretty false"
   },
   "dependencies": {
+    "@byoa/sdk": "0.0.1",
     "@vitejs/plugin-react": "^5.0.0",
     "vite": "^8.1.5",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "latest",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "typescript": "^7.0.2"

@@ -14,6 +14,7 @@ export type BYOAOptions = {
   endpoint: string;
   token: string;
   clientName?: string;
+  clientTitle?: string;
   clientVersion?: string;
 };
 
@@ -34,6 +35,7 @@ export class BYOA extends EventTarget {
   readonly endpoint: string;
   readonly token: string;
   readonly clientName: string;
+  readonly clientTitle: string;
   readonly clientVersion: string;
 
   #socket?: WebSocket;
@@ -45,6 +47,7 @@ export class BYOA extends EventTarget {
     this.endpoint = options.endpoint.replace(/\/$/, "");
     this.token = options.token;
     this.clientName = options.clientName ?? "byoa-sdk";
+    this.clientTitle = options.clientTitle ?? "BYOA SDK";
     this.clientVersion = options.clientVersion ?? "0.0.1";
   }
 
@@ -80,7 +83,7 @@ export class BYOA extends EventTarget {
     socket.addEventListener("close", () => this.#onClose());
 
     await this.request("initialize", {
-      clientInfo: { name: this.clientName, version: this.clientVersion },
+      clientInfo: { name: this.clientName, title: this.clientTitle, version: this.clientVersion },
       capabilities: {},
     });
     this.notify("initialized");
