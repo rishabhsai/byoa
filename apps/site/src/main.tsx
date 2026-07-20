@@ -2,7 +2,7 @@ import { StrictMode, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
 
-const agentCommand = "curl -fsSL https://byoa.dev/agent";
+const agentCommand = "curl -fsSL https://byoa-3ln.pages.dev/agent";
 
 function CopyCommand() {
   const [copied, setCopied] = useState(false);

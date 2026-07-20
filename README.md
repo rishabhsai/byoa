@@ -5,7 +5,7 @@ bring your own agent.
 BYOA is an open deployment kit for adding user-authorized coding agents to developer products. Developers deploy the runner to their own Cloudflare account. Users connect their own supported agent account.
 
 ```bash
-curl -fsSL https://byoa.dev/agent
+curl -fsSL https://byoa-3ln.pages.dev/agent
 ```
 
 ## repository

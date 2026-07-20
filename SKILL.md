@@ -9,7 +9,7 @@ BYOA runs a separate agent sandbox for each app user and workspace.
 
 ## install
 
-1. Read `https://byoa.dev/agent`.
+1. Read `https://byoa-3ln.pages.dev/agent`.
 2. Deploy `workers/runner` to the developer's Cloudflare account.
 3. Store the runner secret only in the developer's backend.
 4. Use `@byoa/sdk` in the backend and browser with short-lived session tokens.

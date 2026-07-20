@@ -2,7 +2,7 @@
 
 bring your own agent.
 
-Agent setup: https://byoa.dev/agent
+Agent setup: https://byoa-3ln.pages.dev/agent
 Source: https://github.com/rishabhsai/byoa
 Architecture: https://github.com/rishabhsai/byoa/blob/main/docs/architecture.md
 Security: https://github.com/rishabhsai/byoa/blob/main/docs/security.md
