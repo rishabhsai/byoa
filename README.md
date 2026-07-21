@@ -4,7 +4,7 @@ bring your own agent.
 
 BYOA runs your users' Codex app-server in the cloud. They sign in with ChatGPT. You do not carry one shared API bill.
 
-[site](https://byoa.lol) · [docs](https://byoa.lol/docs) · [demo](https://demo.byoa.lol) · [npm](https://www.npmjs.com/package/byoa) · [agent setup](https://byoa.lol/agent)
+[site](https://byoa.lol) · [docs](https://byoa.lol/docs) · [demo](https://demo.byoa.lol) · [npm](https://www.npmjs.com/package/@rishabhsai/byoa) · [agent setup](https://byoa.lol/agent)
 
 ```bash
 curl -fsSL https://byoa.lol/agent
@@ -25,13 +25,13 @@ docs               architecture and security notes
 No clone is required.
 
 ```bash
-npx byoa deploy
-npm install byoa
+npx @rishabhsai/byoa deploy
+npm install @rishabhsai/byoa
 ```
 
-Import the browser client from `byoa`, the trusted backend helper from `byoa/server`, or the optional React connection UI from `byoa/react`.
+Import the browser client from `@rishabhsai/byoa`, the trusted backend helper from `@rishabhsai/byoa/server`, or the optional React connection UI from `@rishabhsai/byoa/react`.
 
-The package name is `byoa`. The deploy command carries the runner template, so app developers do not clone this repository.
+The package name is `@rishabhsai/byoa`. The deploy command carries the runner template, so app developers do not clone this repository.
 
 ## repository development
 

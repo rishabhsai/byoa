@@ -5,8 +5,8 @@ BYOA runs an app user's Codex app-server in the developer's Cloudflare account. 
 ## install
 
 ```bash
-npx byoa deploy
-npm install byoa
+npx @rishabhsai/byoa deploy
+npm install @rishabhsai/byoa
 ```
 
 No clone is required for an app integration. Repository contributors should read `AGENTS.md`, `docs/architecture.md`, `docs/deploy.md`, `docs/demo.md`, `docs/security.md`, and `docs/launch.md` before changing BYOA itself.
@@ -21,7 +21,7 @@ The default runner limits session issuance to 5 per installation/user per minute
 
 ## add the client
 
-Use `byoa` for the protocol client, `byoa/server` in the trusted backend, and `byoa/react` only if the app uses React.
+Use `@rishabhsai/byoa` for the protocol client, `@rishabhsai/byoa/server` in the trusted backend, and `@rishabhsai/byoa/react` only if the app uses React.
 
 BYOA is an agent runtime, not a chat abstraction. Use `agent.threads`, `agent.turns`, `agent.workspace`, `agent.models`, `agent.mcp`, and `agent.extensions`. Keep the raw `request()` and event stream available for the rest of Codex app-server.
 

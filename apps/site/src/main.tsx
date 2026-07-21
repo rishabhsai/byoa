@@ -139,15 +139,15 @@ function Landing() {
 
         <div className="setup-step">
           <h3>1. deploy the runner</h3>
-          <pre><code>{`npx byoa deploy`}</code></pre>
+          <pre><code>{`npx @rishabhsai/byoa deploy`}</code></pre>
           <p>The deploy command creates a backend secret when needed and prints the Worker URL. Store both in your app&apos;s server environment.</p>
         </div>
 
         <div className="setup-step">
           <h3>2. issue a browser session from your backend</h3>
-          <pre><code>{`npm install byoa
+          <pre><code>{`npm install @rishabhsai/byoa
 
-import { BYOAServer } from "byoa/server";
+import { BYOAServer } from "@rishabhsai/byoa/server";
 
 const byoa = new BYOAServer({
   endpoint: process.env.BYOA_URL,
@@ -163,7 +163,7 @@ const session = await byoa.createSession({
 
         <div className="setup-step">
           <h3>3. connect from the app</h3>
-          <pre><code>{`import { BYOA } from "byoa";
+          <pre><code>{`import { BYOA } from "@rishabhsai/byoa";
 
 const agent = new BYOA({
   endpoint: session.endpoint,
@@ -185,7 +185,7 @@ const login = await agent.startDeviceLogin();`}</code></pre>
           <div><dt>npm package</dt><dd>0.1.0 / release ready</dd></div>
           <div><dt>cloudflare runner</dt><dd>live / rate limited / container alpha</dd></div>
           <div><dt>durable agent credentials</dt><dd>not done</dd></div>
-          <div><dt>install path</dt><dd>npm install byoa / npx byoa deploy</dd></div>
+          <div><dt>install path</dt><dd>npm install @rishabhsai/byoa / npx @rishabhsai/byoa deploy</dd></div>
         </dl>
         <p>The public demo uses Turnstile, short-lived sessions, and per-user runner limits. Codex account persistence and hostile-workload isolation are still alpha.</p>
       </section>

@@ -25,7 +25,7 @@ Pushing `main` verifies the monorepo, builds the container on GitHub's runner, d
 App developers do not need to clone the repository:
 
 ```bash
-npx byoa deploy
+npx @rishabhsai/byoa deploy
 ```
 
 The package carries the runner template and deploys it from a temporary directory. It does not leave a generated project in the app repository.

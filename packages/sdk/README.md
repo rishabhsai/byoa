@@ -7,14 +7,14 @@ run your users' Codex app-server in your Cloudflare account. they sign in with C
 [site](https://byoa.lol) · [docs](https://byoa.lol/docs) · [demo](https://demo.byoa.lol) · [source](https://github.com/rishabhsai/byoa)
 
 ```bash
-npx byoa deploy
-npm install byoa
+npx @rishabhsai/byoa deploy
+npm install @rishabhsai/byoa
 ```
 
 ```ts
-import { BYOA } from "byoa";
-import { BYOAServer } from "byoa/server";
-import { ConnectAgent } from "byoa/react";
+import { BYOA } from "@rishabhsai/byoa";
+import { BYOAServer } from "@rishabhsai/byoa/server";
+import { ConnectAgent } from "@rishabhsai/byoa/react";
 ```
 
 Model choices come from each signed-in Codex account:

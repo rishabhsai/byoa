@@ -8,7 +8,7 @@ BYOA 0.1.0 is an alpha. Launch it as developer infrastructure, not as a durabili
 npm ci
 npm run check
 npm run build
-npm pack --workspace byoa --dry-run
+npm pack --workspace @rishabhsai/byoa --dry-run
 ```
 
 Verify the live surfaces:

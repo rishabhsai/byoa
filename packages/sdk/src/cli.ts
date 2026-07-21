@@ -18,7 +18,7 @@ if (!command || command === "--help" || command === "-h") {
   console.log(`byoa
 
 usage:
-  npx byoa deploy
+  npx @rishabhsai/byoa deploy
 
 requirements:
   - Node.js 20+
