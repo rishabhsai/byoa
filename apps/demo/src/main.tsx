@@ -1,4 +1,4 @@
-import { StrictMode, useEffect, useRef, useState, type FormEvent } from "react";
+import { StrictMode, useEffect, useLayoutEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { createRoot } from "react-dom/client";
 import { BYOA, type BYOAItemNotification, type BYOAModel, type DeviceLogin } from "@rishabhsai/byoa";
 import "./styles.css";
@@ -105,8 +105,34 @@ function Demo() {
   const clientRef = useRef<BYOA | undefined>(undefined);
   const threadRef = useRef<string | undefined>(undefined);
   const responseRef = useRef<string | undefined>(undefined);
+  const messagesRef = useRef<HTMLDivElement>(null);
+  const composerRef = useRef<HTMLTextAreaElement>(null);
+  const [followingMessages, setFollowingMessages] = useState(true);
 
-  useEffect(() => () => clientRef.current?.close(), []);
+  useEffect(() => () => {
+    const client = clientRef.current;
+    clientRef.current = undefined;
+    client?.close();
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!followingMessages) return;
+    const messagesElement = messagesRef.current;
+    if (messagesElement) messagesElement.scrollTop = messagesElement.scrollHeight;
+  }, [messages, followingMessages]);
+
+  useLayoutEffect(() => {
+    const composer = composerRef.current;
+    if (!composer) return;
+    composer.style.height = "auto";
+    composer.style.height = `${Math.min(composer.scrollHeight, 160)}px`;
+  }, [draft]);
+
+  useEffect(() => {
+    if (phase !== "ready" || running || loggingOut) return;
+    const frame = requestAnimationFrame(() => composerRef.current?.focus());
+    return () => cancelAnimationFrame(frame);
+  }, [phase, running, loggingOut]);
 
   const loadModels = async (client: BYOA) => {
     try {
@@ -125,7 +151,9 @@ function Demo() {
   };
 
   const ready = (client: BYOA) => {
+    setError(undefined);
     setPhase("ready");
+    setFollowingMessages(true);
     void loadModels(client);
   };
 
@@ -150,6 +178,15 @@ function Demo() {
 
       const client = new BYOA({ ...payload, clientName: "byoa_demo", clientTitle: "BYOA Demo" });
       clientRef.current = client;
+      client.addEventListener("close", () => {
+        if (clientRef.current !== client) return;
+        clientRef.current = undefined;
+        threadRef.current = undefined;
+        responseRef.current = undefined;
+        setRunning(false);
+        setPhase("offline");
+        setError("runner connection closed. reconnect to continue.");
+      });
       client.addEventListener("item/agentMessage/delta", (event) => {
         const delta = (event as CustomEvent<Delta>).detail.delta;
         const responseId = responseRef.current;
@@ -186,6 +223,8 @@ function Demo() {
       client.addEventListener("account/login/completed", (event) => {
         const result = (event as CustomEvent<LoginResult>).detail;
         if (result.success === false) {
+          clientRef.current = undefined;
+          client.close();
           setError(result.error ?? "ChatGPT sign-in failed.");
           setPhase("idle");
           return;
@@ -193,6 +232,9 @@ function Demo() {
         ready(client);
       }, { once: true });
     } catch (cause) {
+      const client = clientRef.current;
+      clientRef.current = undefined;
+      client?.close();
       setTurnstileToken(undefined);
       setTurnstileReset((value) => value + 1);
       setPhase("offline");
@@ -208,6 +250,7 @@ function Demo() {
 
     setDraft("");
     setRunning(true);
+    setFollowingMessages(true);
     setError(undefined);
     const userId = crypto.randomUUID();
     const responseId = crypto.randomUUID();
@@ -232,8 +275,27 @@ function Demo() {
     } catch (cause) {
       setRunning(false);
       responseRef.current = undefined;
+      setMessages((current) => current.filter((message) => message.id !== responseId || Boolean(message.text || message.image)));
       setError(cause instanceof Error ? cause.message : "The turn failed.");
     }
+  };
+
+  const onComposerKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing) return;
+    event.preventDefault();
+    if (!running) event.currentTarget.form?.requestSubmit();
+  };
+
+  const onMessagesScroll = () => {
+    const messagesElement = messagesRef.current;
+    if (!messagesElement) return;
+    const distanceFromBottom = messagesElement.scrollHeight - messagesElement.scrollTop - messagesElement.clientHeight;
+    setFollowingMessages(distanceFromBottom < 48);
+  };
+
+  const scrollToLatest = () => {
+    setFollowingMessages(true);
+    messagesRef.current?.scrollTo({ top: messagesRef.current.scrollHeight });
   };
 
   const logout = async () => {
@@ -243,8 +305,8 @@ function Demo() {
     setError(undefined);
     try {
       await client.logout();
-      client.close();
       clientRef.current = undefined;
+      client.close();
       threadRef.current = undefined;
       responseRef.current = undefined;
       setLogin(undefined);
@@ -255,6 +317,7 @@ function Demo() {
       setImageGeneration(false);
       setMode("chat");
       setDraft("");
+      setFollowingMessages(true);
       setTurnstileToken(undefined);
       setPhase("idle");
     } catch (cause) {
@@ -279,7 +342,7 @@ function Demo() {
             <p>This is the smallest BYOA integration: one anonymous app session, one isolated runner, and one user-authorized Codex account.</p>
             <TurnstileGate onToken={setTurnstileToken} resetKey={turnstileReset} />
             <button type="button" onClick={connect} disabled={phase === "connecting" || !turnstileToken}>{phase === "connecting" ? "starting runner…" : "connect chatgpt"}</button>
-            {error ? <p className="error">{error}</p> : null}
+            {error ? <p className="error" role="alert">{error}</p> : null}
           </div>
         ) : null}
 
@@ -299,16 +362,19 @@ function Demo() {
               <button className={mode === "image" ? "active" : ""} type="button" onClick={() => setMode("image")} disabled={running || !imageGeneration}>image{imageGeneration ? "" : " / unavailable"}</button>
               <button className="logout" type="button" onClick={logout} disabled={running || loggingOut}>{loggingOut ? "logging out…" : "log out"}</button>
             </div>
-            <div className="messages" aria-live="polite">
-              {messages.map((message) => (
-                <div className={`message ${message.role}`} key={message.id}>
-                  <b>{message.role === "agent" ? "agent" : "you"}</b>
-                  <div className="message-body">
-                    <p>{message.text || (message.image ? "" : "▌")}</p>
-                    {message.image ? <figure><img src={message.image.src} alt={message.image.prompt ?? "generated image"} /><figcaption>{message.image.prompt ?? "generated by codex"}</figcaption></figure> : null}
+            <div className="messages-wrap">
+              <div className="messages" ref={messagesRef} role="log" aria-label="conversation" aria-live="polite" aria-relevant="additions text" aria-busy={running} onScroll={onMessagesScroll}>
+                {messages.map((message) => (
+                  <div className={`message ${message.role}`} key={message.id}>
+                    <b>{message.role === "agent" ? "agent" : "you"}</b>
+                    <div className="message-body">
+                      <p>{message.text || (message.image ? "" : "▌")}</p>
+                      {message.image ? <figure><img src={message.image.src} alt={message.image.prompt ?? "generated image"} onLoad={() => { if (followingMessages) scrollToLatest(); }} /><figcaption>{message.image.prompt ?? "generated by codex"}</figcaption></figure> : null}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
+              {!followingMessages ? <button className="jump-latest" type="button" onClick={scrollToLatest}>jump to latest ↓</button> : null}
             </div>
             {models.length ? (
               <div className="settings" aria-label="agent settings">
@@ -338,10 +404,13 @@ function Demo() {
             ) : null}
             <form onSubmit={send}>
               <label htmlFor="message">{mode === "image" ? "prompt" : "message"}</label>
-              <textarea id="message" value={draft} onChange={(event) => setDraft(event.target.value)} placeholder={mode === "image" ? "a yellow race car in heavy rain, 35mm film" : "ask the agent something"} rows={3} />
+              <div className="composer-field">
+                <textarea ref={composerRef} id="message" value={draft} onChange={(event) => setDraft(event.target.value)} onKeyDown={onComposerKeyDown} placeholder={mode === "image" ? "a yellow race car in heavy rain, 35mm film" : "ask the agent something"} rows={1} aria-describedby="message-help" />
+                <p id="message-help">enter to send · shift+enter for new line</p>
+              </div>
               <button type="submit" disabled={running || !draft.trim()}>{running ? "running…" : mode === "image" ? "generate" : "send"}</button>
             </form>
-            {error ? <p className="error">{error}</p> : null}
+            {error ? <p className="error" role="alert">{error}</p> : null}
           </div>
         ) : null}
       </section>
