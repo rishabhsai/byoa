@@ -27,12 +27,12 @@ Dynamic tools are experimental in Codex. The app-server asks its connected clien
 ## state
 
 - `/workspace`: ephemeral repository and generated files.
-- `/var/lib/byoa/codex`: per-sandbox `CODEX_HOME`, mounted from R2.
+- `/var/lib/byoa/codex`: fast local per-sandbox `CODEX_HOME`, denied to model shell tools.
 - Worker state: session authorization and runner metadata.
-- R2: one private prefix per derived sandbox identity for Codex login state.
+- R2: one private prefix per derived sandbox identity. Only `auth.json` is restored to local storage and synced back; Codex SQLite state never runs over the object-storage mount.
 - Workspace snapshots (planned): a separate backup and restore path, not a credential-bucket mount.
 
-The mount is the credential-persistence mechanism in 0.2.0. Durability is still labeled beta until device login survives a sandbox replacement in the paid account. Workspace durability is not implemented.
+The staged credential file is the persistence mechanism in 0.2.0. Durability is still labeled beta until device login survives a sandbox replacement in the paid account. Workspace durability is not implemented.
 
 ## request controls
 

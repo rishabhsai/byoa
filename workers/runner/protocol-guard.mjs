@@ -231,6 +231,7 @@ cli_auth_credentials_store = "file"
 ":minimal" = "read"
 "/workspace" = "${access}"
 "/var/lib/byoa/codex" = "deny"
+"/mnt/byoa-state" = "deny"
 
 [permissions.byoa-runtime.network]
 enabled = false

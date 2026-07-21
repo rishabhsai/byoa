@@ -154,6 +154,8 @@ export type BYOAOptions = {
   clientTitle?: string;
   clientVersion?: string;
   experimentalApi?: boolean;
+  connectTimeoutMs?: number;
+  requestTimeoutMs?: number;
 };
 
 type RpcMessage = {
@@ -167,6 +169,7 @@ type RpcMessage = {
 type PendingRequest = {
   resolve: (value: unknown) => void;
   reject: (reason: Error) => void;
+  timeout: ReturnType<typeof setTimeout>;
 };
 
 type DynamicToolHandler = (call: BYOADynamicToolCall) => BYOAToolResult | Promise<BYOAToolResult>;
@@ -196,6 +199,8 @@ export class BYOA extends EventTarget {
   readonly clientTitle: string;
   readonly clientVersion: string;
   readonly experimentalApi: boolean;
+  readonly connectTimeoutMs: number;
+  readonly requestTimeoutMs: number;
 
   #socket?: WebSocket;
   #nextId = 1;
@@ -270,8 +275,10 @@ export class BYOA extends EventTarget {
     this.token = options.token;
     this.clientName = options.clientName ?? "byoa-sdk";
     this.clientTitle = options.clientTitle ?? "BYOA SDK";
-    this.clientVersion = options.clientVersion ?? "0.1.0";
+    this.clientVersion = options.clientVersion ?? "0.2.0";
     this.experimentalApi = options.experimentalApi ?? false;
+    this.connectTimeoutMs = Math.max(1, options.connectTimeoutMs ?? 60_000);
+    this.requestTimeoutMs = Math.max(1, options.requestTimeoutMs ?? 60_000);
   }
 
   async connect(): Promise<void> {
@@ -286,6 +293,11 @@ export class BYOA extends EventTarget {
     this.#socket = socket;
 
     await new Promise<void>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        cleanup();
+        try { socket.close(); } catch { /* connection is still opening */ }
+        reject(new Error("BYOA runner connection timed out"));
+      }, this.connectTimeoutMs);
       const onOpen = () => {
         cleanup();
         resolve();
@@ -294,12 +306,19 @@ export class BYOA extends EventTarget {
         cleanup();
         reject(new Error("could not connect to the BYOA runner"));
       };
+      const onClose = () => {
+        cleanup();
+        reject(new Error("BYOA runner closed before connecting"));
+      };
       const cleanup = () => {
+        clearTimeout(timeout);
         socket.removeEventListener("open", onOpen);
         socket.removeEventListener("error", onError);
+        socket.removeEventListener("close", onClose);
       };
       socket.addEventListener("open", onOpen);
       socket.addEventListener("error", onError);
+      socket.addEventListener("close", onClose);
     });
 
     socket.addEventListener("message", (event) => this.#onMessage(String(event.data)));
@@ -355,16 +374,21 @@ export class BYOA extends EventTarget {
     return () => this.removeEventListener("request", listener);
   }
 
-  request<T = unknown>(method: string, params: unknown = {}): Promise<T> {
+  request<T = unknown>(method: string, params: unknown = {}, timeoutMs = this.requestTimeoutMs): Promise<T> {
     if (this.#socket?.readyState !== WebSocket.OPEN) {
       return Promise.reject(new Error("BYOA is not connected"));
     }
 
     const id = this.#nextId++;
     const promise = new Promise<T>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        this.#pending.delete(id);
+        reject(new Error(`${method} timed out`));
+      }, Math.max(1, timeoutMs));
       this.#pending.set(id, {
         resolve: (value) => resolve(value as T),
         reject,
+        timeout,
       });
     });
     this.#socket.send(JSON.stringify({ id, method, params }));
@@ -408,6 +432,7 @@ export class BYOA extends EventTarget {
       const pending = this.#pending.get(message.id);
       if (!pending) return;
       this.#pending.delete(message.id);
+      clearTimeout(pending.timeout);
       if (message.error) pending.reject(new Error(message.error.message));
       else pending.resolve(message.result);
       return;
@@ -422,7 +447,10 @@ export class BYOA extends EventTarget {
   }
 
   #onClose(): void {
-    for (const pending of this.#pending.values()) pending.reject(new Error("BYOA connection closed"));
+    for (const pending of this.#pending.values()) {
+      clearTimeout(pending.timeout);
+      pending.reject(new Error("BYOA connection closed"));
+    }
     this.#pending.clear();
     this.dispatchEvent(new Event("close"));
   }

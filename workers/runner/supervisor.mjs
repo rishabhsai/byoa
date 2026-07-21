@@ -2,12 +2,26 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import { createServer } from "node:http";
 import { WebSocket, WebSocketServer } from "ws";
+import { restoreCredentials, watchCredentials } from "./credential-store.mjs";
 import { codexConfig, guardClientMessage } from "./protocol-guard.mjs";
 
 const port = Number(process.env.BYOA_SUPERVISOR_PORT ?? 8787);
 const codexHome = process.env.CODEX_HOME ?? "/var/lib/byoa/codex";
+const persistedCodexHome = process.env.BYOA_PERSISTED_CODEX_HOME;
 await mkdir(codexHome, { recursive: true });
 await mkdir("/workspace", { recursive: true });
+
+let credentialSync;
+if (persistedCodexHome) {
+  const restored = await restoreCredentials(codexHome, persistedCodexHome);
+  console.log(JSON.stringify({ event: "credential_state_ready", restored }));
+  credentialSync = watchCredentials(codexHome, persistedCodexHome, (error) => {
+    console.error(JSON.stringify({
+      event: "credential_sync_failed",
+      error: error instanceof Error ? error.message : String(error),
+    }));
+  });
+}
 
 const server = createServer((request, response) => {
   if (request.url === "/health") {
@@ -49,6 +63,16 @@ async function connect(socket, request) {
       const newline = stdout.indexOf("\n");
       const line = stdout.slice(0, newline).trim();
       stdout = stdout.slice(newline + 1);
+      if (line && credentialSync) {
+        try {
+          const event = JSON.parse(line);
+          if (event.method === "account/login/completed" && event.params?.success !== false) {
+            void credentialSync.flush();
+          }
+        } catch {
+          // app-server owns stdout; malformed protocol lines are handled by the client.
+        }
+      }
       if (line && socket.readyState === WebSocket.OPEN) socket.send(line);
     }
   });
@@ -76,9 +100,24 @@ async function connect(socket, request) {
   socket.on("close", close);
   socket.on("error", close);
   codex.on("exit", (code) => {
+    void credentialSync?.flush();
     if (socket.readyState === WebSocket.OPEN) socket.close(1011, `codex exited (${code ?? "signal"})`);
     active = false;
   });
+}
+
+if (credentialSync) {
+  for (const signal of ["SIGINT", "SIGTERM"]) {
+    process.once(signal, () => {
+      const deadline = setTimeout(() => process.exit(0), 2_000);
+      deadline.unref();
+      void credentialSync.flush().finally(() => {
+        clearTimeout(deadline);
+        credentialSync.close();
+        process.exit(0);
+      });
+    });
+  }
 }
 
 sockets.on("connection", (socket, request) => {

@@ -19,7 +19,7 @@ The runner executes model-directed shell commands. Treat every repository, promp
 
 The browser does not receive unrestricted app-server access. The supervisor allowlists supported methods, rejects full-access methods such as `thread/shellCommand`, constrains app-server filesystem calls to `/workspace`, and removes permission overrides from thread and turn requests.
 
-Codex starts with `approval_policy = "never"` and a fixed permission profile. Shell tools can access `/workspace` according to the server-issued session mode, cannot access `/var/lib/byoa/codex`, and have network access disabled. The browser cannot change those rules.
+Codex starts with `approval_policy = "never"` and a fixed permission profile. Shell tools can access `/workspace` according to the server-issued session mode, cannot access local or R2-backed credential paths, and have network access disabled. The browser cannot change those rules.
 
 These controls reduce the reachable surface; they are not yet a hostile-workload security claim. Symlink behavior, new app-server methods, MCP authority, and container escape boundaries still require adversarial review.
 

@@ -8,7 +8,7 @@
     "build:container": "wrangler deploy --dry-run --outdir dist-container",
     "check": "tsc -p tsconfig.json --noEmit",
     "deploy": "wrangler deploy",
-    "test": "node --test protocol-guard.test.mjs"
+    "test": "node --test *.test.mjs"
   },
   "dependencies": {
     "@cloudflare/sandbox": "0.12.3"

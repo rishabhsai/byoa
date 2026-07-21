@@ -79,4 +79,4 @@ client.onToolCall(async (call) => ({
 
 Keep privileged tools behind your backend or an authenticated MCP server.
 
-the deploy command requires Node.js 20+, Cloudflare Workers Paid, Containers, R2, and Wrangler OAuth or `CLOUDFLARE_API_TOKEN`. Codex login state is R2-backed; `/workspace` remains ephemeral in 0.2.0.
+the deploy command requires Node.js 20+, Cloudflare Workers Paid, Containers, R2, and Wrangler OAuth or `CLOUDFLARE_API_TOKEN`. Codex runs on local disk and syncs its login file to R2; `/workspace` remains ephemeral in 0.2.0. Connections and protocol requests time out after 60 seconds by default.

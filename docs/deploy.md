@@ -58,6 +58,6 @@ printf '1\n' | npx wrangler secret put BYOA_DISABLED --config workers/runner/wra
 
 Remove that secret to resume. `GET /v1/health` reports `acceptingSessions` while the stop is active.
 
-Codex login state is mounted from a unique R2 prefix for each derived sandbox identity. `/workspace` remains ephemeral. Treat credential durability as beta until a device-login, sandbox-replacement, and reconnect test passes in the target paid account.
+Codex runs locally and syncs its login file to a unique R2 prefix for each derived sandbox identity. `/workspace` remains ephemeral. Treat credential durability as beta until a device-login, sandbox-replacement, and reconnect test passes in the target paid account.
 
 See [launch.md](launch.md) for DNS, custom domains, demo protection, verification, and rollback.

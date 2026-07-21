@@ -71,5 +71,6 @@ test("writes a locked Codex permission profile", () => {
   const writable = codexConfig("workspace-write");
   assert.match(writable, /"\/workspace" = "write"/);
   assert.match(writable, /"\/var\/lib\/byoa\/codex" = "deny"/);
+  assert.match(writable, /"\/mnt\/byoa-state" = "deny"/);
   assert.match(writable, /approval_policy = "never"/);
 });

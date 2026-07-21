@@ -33,4 +33,4 @@ The example text and image integration lives in `apps/demo` and is deployed at `
 
 ## do not improvise around blockers
 
-If Containers or R2 are unavailable, stop and enable them. Codex login state uses an R2 mount, but `/workspace` remains ephemeral. Do not claim credential durability until a sandbox-replacement test passes in the target account. Do not replace tenant isolation with a shared process or store agent credentials in the workspace.
+If Containers or R2 are unavailable, stop and enable them. Codex runs locally and only its login file is synced through an R2 mount; `/workspace` remains ephemeral. Do not claim credential durability until a sandbox-replacement test passes in the target account. Do not replace tenant isolation with a shared process or store agent credentials in the workspace.

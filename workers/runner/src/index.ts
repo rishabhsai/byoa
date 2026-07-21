@@ -75,7 +75,11 @@ async function secureEqual(left: Uint8Array, right: Uint8Array): Promise<boolean
 }
 
 async function secureStringEqual(left: string, right: string): Promise<boolean> {
-  return secureEqual(encoder.encode(left), encoder.encode(right));
+  const [leftDigest, rightDigest] = await Promise.all([
+    crypto.subtle.digest("SHA-256", encoder.encode(left)),
+    crypto.subtle.digest("SHA-256", encoder.encode(right)),
+  ]);
+  return secureEqual(new Uint8Array(leftDigest), new Uint8Array(rightDigest));
 }
 
 async function sandboxIdFor(input: SessionInput): Promise<string> {
@@ -172,13 +176,14 @@ async function connect(request: Request, env: RunnerEnv): Promise<Response> {
   const processes = await sandbox.listProcesses();
   let supervisor = processes.find((process) => process.id === "byoa-supervisor");
   if (!supervisor) {
-    await sandbox.mountBucket("BYOA_STATE", "/var/lib/byoa/codex", {
+    await sandbox.mountBucket("BYOA_STATE", "/mnt/byoa-state", {
       prefix: `/sandboxes/${claims.sandboxId}/codex/`,
     });
     supervisor = await sandbox.startProcess("node /opt/byoa/supervisor.mjs", {
       processId: "byoa-supervisor",
       env: {
         CODEX_HOME: "/var/lib/byoa/codex",
+        BYOA_PERSISTED_CODEX_HOME: "/mnt/byoa-state",
         BYOA_SUPERVISOR_PORT: "8787",
       },
       autoCleanup: true,
@@ -205,16 +210,25 @@ async function connect(request: Request, env: RunnerEnv): Promise<Response> {
 export default {
   async fetch(request: Request, env: RunnerEnv): Promise<Response> {
     const url = new URL(request.url);
-    if (request.method === "GET" && url.pathname === "/v1/health") {
-      return json({ ok: true, service: "byoa-runner", acceptingSessions: env.BYOA_DISABLED !== "1" });
+    try {
+      if (request.method === "GET" && url.pathname === "/v1/health") {
+        return json({ ok: true, service: "byoa-runner", acceptingSessions: env.BYOA_DISABLED !== "1" });
+      }
+      if (env.BYOA_DISABLED === "1") return unavailable();
+      if (request.method === "POST" && url.pathname === "/v1/sessions") {
+        return createSession(request, env);
+      }
+      if (request.method === "GET" && url.pathname === "/v1/connect") {
+        return connect(request, env);
+      }
+      return json({ error: "not found" }, { status: 404 });
+    } catch (error) {
+      console.error(JSON.stringify({
+        event: "request_failed",
+        path: url.pathname,
+        error: error instanceof Error ? error.message : String(error),
+      }));
+      return json({ error: "runner request failed" }, { status: 500 });
     }
-    if (env.BYOA_DISABLED === "1") return unavailable();
-    if (request.method === "POST" && url.pathname === "/v1/sessions") {
-      return createSession(request, env);
-    }
-    if (request.method === "GET" && url.pathname === "/v1/connect") {
-      return connect(request, env);
-    }
-    return json({ error: "not found" }, { status: 404 });
   },
 } satisfies ExportedHandler<RunnerEnv>;

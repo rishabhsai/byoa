@@ -77,4 +77,4 @@ The runner limits session creation to 5 per user per minute and connection attem
 
 ## status
 
-0.2.0 is an alpha release candidate. Codex login state is mounted from a sandbox-scoped R2 prefix and browser protocol access is allowlisted. `/workspace` is still ephemeral, and credential durability and hostile-workload isolation remain unclaimed until restart and adversarial tests pass in the paid Cloudflare account.
+0.2.0 is an alpha release candidate. Codex runs on local sandbox storage while its login file is restored from and synced to a sandbox-scoped R2 prefix. Browser protocol access is allowlisted. `/workspace` is still ephemeral, and credential durability and hostile-workload isolation remain unclaimed until restart and adversarial tests pass in the paid Cloudflare account.
