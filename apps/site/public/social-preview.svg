@@ -3,9 +3,9 @@
   <rect x="1" y="1" width="1198" height="628" fill="none" stroke="#393934" stroke-width="2"/>
   <text x="66" y="96" fill="#aaa9a2" font-family="Arial, sans-serif" font-size="29">BYOA</text>
   <text x="1134" y="96" fill="#aaa9a2" font-family="Arial, sans-serif" font-size="29" text-anchor="end">OPEN SOURCE / 2026</text>
-  <text x="66" y="264" fill="#f1f0ea" font-family="Arial, sans-serif" font-size="112">bring your</text>
-  <text x="601" y="264" fill="#f2d525" font-family="Arial, sans-serif" font-size="112">agent.</text>
-  <rect x="601" y="282" width="320" height="8" fill="#f2d525"/>
+  <text x="66" y="264" fill="#f1f0ea" font-family="Arial, sans-serif" font-size="96">bring your own</text>
+  <text x="727" y="264" fill="#f2d525" font-family="Arial, sans-serif" font-size="96">agent.</text>
+  <rect x="727" y="282" width="274" height="8" fill="#f2d525"/>
   <text x="66" y="386" fill="#aaa9a2" font-family="Arial, sans-serif" font-size="43">Run your users' Codex app-server in the cloud.</text>
   <text x="66" y="446" fill="#aaa9a2" font-family="Arial, sans-serif" font-size="43">They sign in with ChatGPT. No shared API bill.</text>
 </svg>

@@ -88,7 +88,7 @@ function Landing() {
       <section className="hero" id="top">
         <p className="status">open source / early alpha</p>
         <div className="logo" aria-label="BYOA">BYOA</div>
-        <h1>bring your <a href="#how">agent</a></h1>
+        <h1>bring your own <a href="#how">agent</a></h1>
         <p className="lead">Run your users&apos; Codex app-server in the cloud. They sign in with ChatGPT. No shared API bill.</p>
         <div className="hero-links"><a href="#setup">set it up</a><span>|</span><a className="demo-link" href={demoUrl}>open the demo ↗</a><span>|</span><a href="https://github.com/rishabhsai/byoa">read the code</a></div>
         <CopyCommand />
