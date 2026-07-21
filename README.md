@@ -77,4 +77,4 @@ The runner limits session creation to 5 per user per minute and connection attem
 
 ## status
 
-0.1.0 is an alpha release. the site, protected demo, and runner are usable. npm publication is waiting on maintainer 2FA approval. runner files and Codex login state are ephemeral until the R2 persistence design is implemented and reviewed.
+0.1.0 is an alpha release. the site, protected demo, runner, and npm package source are usable. runner files and Codex login state are ephemeral until the R2 persistence design is implemented and reviewed.
