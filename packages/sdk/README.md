@@ -38,6 +38,8 @@ await client.startTurn(threadId, "hello", {
 });
 ```
 
+Revoke the persisted ChatGPT session with `await client.logout()`.
+
 BYOA exposes the agent runtime, not only chat:
 
 ```ts

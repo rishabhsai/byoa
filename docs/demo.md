@@ -2,6 +2,8 @@
 
 The demo is a real BYOA client, not a simulation. It requests a short-lived session from a Pages Function, starts Codex device login, reads the user's models and provider capabilities, creates an ephemeral read-only thread, and renders streamed text and image-generation items.
 
+The ready state includes a logout control. It calls Codex `account/logout`, removes the persisted account session, closes the runner connection, and returns the browser to the protected connect screen.
+
 Text mode renders `item/agentMessage/delta`. Image mode asks Codex to use its built-in image-generation tool and renders the final `imageGeneration` item from `item/completed`. The image option stays disabled when the signed-in provider reports no image-generation capability.
 
 It remains offline until the runner and Turnstile verifier are deployed and these Pages values are configured:

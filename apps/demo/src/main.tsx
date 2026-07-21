@@ -29,6 +29,9 @@ declare global {
 }
 
 const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined;
+const initialMessages: Message[] = [
+  { id: "hello", role: "agent", text: "Connect ChatGPT, then try a text or image task on your own Codex account." },
+];
 
 function TurnstileGate({ onToken, resetKey }: { onToken(token: string | undefined): void; resetKey: number }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -87,14 +90,13 @@ function imageSource(result: string): string {
 function Demo() {
   const [phase, setPhase] = useState<"idle" | "connecting" | "login" | "ready" | "offline">("idle");
   const [login, setLogin] = useState<DeviceLogin>();
-  const [messages, setMessages] = useState<Message[]>([
-    { id: "hello", role: "agent", text: "Connect ChatGPT, then try a text or image task on your own Codex account." },
-  ]);
+  const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [mode, setMode] = useState<Mode>("chat");
   const [imageGeneration, setImageGeneration] = useState(false);
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string>();
   const [running, setRunning] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string>();
   const [turnstileReset, setTurnstileReset] = useState(0);
   const [models, setModels] = useState<BYOAModel[]>([]);
@@ -216,8 +218,6 @@ function Demo() {
       if (!threadRef.current) {
         const started = await client.startThread({
           ephemeral: true,
-          sandbox: "read-only",
-          approvalPolicy: "never",
           ...(model ? { model } : {}),
         }) as ThreadStart;
         threadRef.current = started.thread.id;
@@ -233,6 +233,34 @@ function Demo() {
       setRunning(false);
       responseRef.current = undefined;
       setError(cause instanceof Error ? cause.message : "The turn failed.");
+    }
+  };
+
+  const logout = async () => {
+    const client = clientRef.current;
+    if (!client || running || loggingOut) return;
+    setLoggingOut(true);
+    setError(undefined);
+    try {
+      await client.logout();
+      client.close();
+      clientRef.current = undefined;
+      threadRef.current = undefined;
+      responseRef.current = undefined;
+      setLogin(undefined);
+      setMessages(initialMessages);
+      setModels([]);
+      setModel("");
+      setEffort("");
+      setImageGeneration(false);
+      setMode("chat");
+      setDraft("");
+      setTurnstileToken(undefined);
+      setPhase("idle");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "ChatGPT logout failed.");
+    } finally {
+      setLoggingOut(false);
     }
   };
 
@@ -269,6 +297,7 @@ function Demo() {
             <div className="modes" aria-label="demo mode">
               <button className={mode === "chat" ? "active" : ""} type="button" onClick={() => setMode("chat")} disabled={running}>text</button>
               <button className={mode === "image" ? "active" : ""} type="button" onClick={() => setMode("image")} disabled={running || !imageGeneration}>image{imageGeneration ? "" : " / unavailable"}</button>
+              <button className="logout" type="button" onClick={logout} disabled={running || loggingOut}>{loggingOut ? "logging out…" : "log out"}</button>
             </div>
             <div className="messages" aria-live="polite">
               {messages.map((message) => (

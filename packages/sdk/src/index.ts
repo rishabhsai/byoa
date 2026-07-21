@@ -324,6 +324,10 @@ export class BYOA extends EventTarget {
     return this.request<DeviceLogin>("account/login/start", { type: "chatgptDeviceCode" });
   }
 
+  async logout(): Promise<void> {
+    await this.request("account/logout");
+  }
+
   async startThread(options: BYOAThreadOptions = {}): Promise<BYOAThreadStart> {
     return this.threads.start(options);
   }
