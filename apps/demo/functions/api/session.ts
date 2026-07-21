@@ -104,6 +104,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
       installationId: "byoa-demo",
       userId: identity.id,
       workspaceId: "chat",
+      workspaceAccess: "read-only",
       ttlSeconds: 300,
     }),
   });

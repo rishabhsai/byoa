@@ -5,6 +5,10 @@
   "compatibility_date": "2026-07-20",
   "compatibility_flags": ["nodejs_compat"],
   "vars": { "SANDBOX_TRANSPORT": "rpc" },
+  "r2_buckets": [{
+    "binding": "BYOA_STATE",
+    "bucket_name": "byoa-state"
+  }],
   "ratelimits": [
     {
       "name": "SESSION_RATE_LIMITER",

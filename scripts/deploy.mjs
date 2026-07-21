@@ -40,6 +40,7 @@ const secret = providedSecret ?? randomBytes(32).toString("base64url");
 try {
   console.log("\nchecking Cloudflare…\n");
   await run("npx", ["wrangler", "whoami"]);
+  await run(process.execPath, ["scripts/ensure-state.mjs"]);
   console.log("\nsetting runner secret…\n");
   await run("npx", ["wrangler", "secret", "put", "BYOA_APP_SECRET", "--config", config], `${secret}\n`);
   console.log("\ndeploying runner…\n");

@@ -13,7 +13,7 @@ No clone is required for an app integration. Repository contributors should read
 
 ## deploy the runner
 
-Requirements: Cloudflare Workers Paid, Containers, and an authenticated Wrangler session. R2 is required before enabling durable credential and workspace persistence.
+Requirements: Cloudflare Workers Paid, Containers, R2, and an authenticated Wrangler session. The deploy command creates the private `byoa-state` bucket. If Cloudflare returns error `10042`, enable R2 in the dashboard and rerun it.
 
 The deploy command creates `BYOA_APP_SECRET` when one is not provided. Save it in the developer backend, which exchanges it for short-lived browser session tokens. Never put it or a Cloudflare credential in browser code.
 
@@ -23,9 +23,9 @@ The default runner limits session issuance to 5 per installation/user per minute
 
 Use `@rishabhsai/byoa` for the protocol client, `@rishabhsai/byoa/server` in the trusted backend, and `@rishabhsai/byoa/react` only if the app uses React.
 
-BYOA is an agent runtime, not a chat abstraction. Use `agent.threads`, `agent.turns`, `agent.workspace`, `agent.models`, `agent.mcp`, and `agent.extensions`. Keep the raw `request()` and event stream available for the rest of Codex app-server.
+BYOA is an agent runtime, not a chat abstraction. Use `agent.threads`, `agent.turns`, `agent.workspace`, `agent.models`, `agent.mcp`, and `agent.extensions`. Raw `request()` remains available only for methods admitted by the runner firewall.
 
-Files belong under `/workspace`. Use thread `developerInstructions` for app behavior, `AGENTS.md` and skills for durable repo behavior, hooks for lifecycle enforcement, and `outputSchema` for machine-readable output.
+Files belong under `/workspace`. The backend sets `workspaceAccess` to `read-only` or `workspace-write`; browser requests cannot broaden it. Use thread `developerInstructions` for app behavior, `AGENTS.md` and skills for durable repo behavior, hooks for lifecycle enforcement, and `outputSchema` for machine-readable output.
 
 Dynamic tools require `experimentalApi: true`. Use `agent.onToolCall()` only for browser-safe tools. Put privileged tools behind the app backend or authenticated MCP; the signed backend tool router is not finished.
 
@@ -33,4 +33,4 @@ The example text and image integration lives in `apps/demo` and is deployed at `
 
 ## do not improvise around blockers
 
-If Containers are unavailable, stop and enable them. The current alpha runner is ephemeral; do not imply durable sessions until R2 persistence lands. Do not replace tenant isolation with a shared process or store agent credentials in the workspace.
+If Containers or R2 are unavailable, stop and enable them. Codex login state uses an R2 mount, but `/workspace` remains ephemeral. Do not claim credential durability until a sandbox-replacement test passes in the target account. Do not replace tenant isolation with a shared process or store agent credentials in the workspace.

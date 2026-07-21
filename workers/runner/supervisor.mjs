@@ -1,7 +1,8 @@
-import { mkdir } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import { createServer } from "node:http";
 import { WebSocket, WebSocketServer } from "ws";
+import { codexConfig, guardClientMessage } from "./protocol-guard.mjs";
 
 const port = Number(process.env.BYOA_SUPERVISOR_PORT ?? 8787);
 const codexHome = process.env.CODEX_HOME ?? "/var/lib/byoa/codex";
@@ -18,15 +19,21 @@ const server = createServer((request, response) => {
   response.end();
 });
 
-const sockets = new WebSocketServer({ server });
+const sockets = new WebSocketServer({ server, maxPayload: 16 * 1024 * 1024 });
 let active = false;
 
-sockets.on("connection", (socket) => {
+async function connect(socket, request) {
   if (active) {
     socket.close(1013, "runner already connected");
     return;
   }
   active = true;
+
+  const workspaceAccess = request.headers["x-byoa-workspace-access"] === "workspace-write"
+    ? "workspace-write"
+    : "read-only";
+
+  await writeFile(`${codexHome}/config.toml`, codexConfig(workspaceAccess), { mode: 0o600 });
 
   const codex = spawn("codex", ["app-server", "--stdio"], {
     cwd: "/workspace",
@@ -49,7 +56,17 @@ sockets.on("connection", (socket) => {
   codex.stderr.resume();
 
   socket.on("message", (message) => {
-    if (codex.stdin.writable) codex.stdin.write(`${String(message)}\n`);
+    const guarded = guardClientMessage(String(message), workspaceAccess);
+    if (guarded.action === "close") {
+      socket.close(guarded.code, guarded.reason);
+      return;
+    }
+    if (guarded.action === "respond") {
+      if (socket.readyState === WebSocket.OPEN) socket.send(guarded.message);
+      console.warn(JSON.stringify({ event: "protocol_method_denied", method: guarded.deniedMethod ?? "unknown" }));
+      return;
+    }
+    if (codex.stdin.writable) codex.stdin.write(`${guarded.message}\n`);
   });
 
   const close = () => {
@@ -61,6 +78,17 @@ sockets.on("connection", (socket) => {
   codex.on("exit", (code) => {
     if (socket.readyState === WebSocket.OPEN) socket.close(1011, `codex exited (${code ?? "signal"})`);
     active = false;
+  });
+}
+
+sockets.on("connection", (socket, request) => {
+  void connect(socket, request).catch((error) => {
+    console.error(JSON.stringify({
+      event: "connection_setup_failed",
+      error: error instanceof Error ? error.message : String(error),
+    }));
+    active = false;
+    if (socket.readyState === WebSocket.OPEN) socket.close(1011, "runner setup failed");
   });
 });
 

@@ -17,6 +17,17 @@ import { BYOAServer } from "@rishabhsai/byoa/server";
 import { ConnectAgent } from "@rishabhsai/byoa/react";
 ```
 
+Create browser sessions only from a trusted backend. The backend fixes workspace access for the whole connection:
+
+```ts
+const session = await server.createSession({
+  installationId: "your-app",
+  userId: signedInUser.id,
+  workspaceId: project.id,
+  workspaceAccess: "read-only", // or "workspace-write"
+});
+```
+
 Model choices come from each signed-in Codex account:
 
 ```ts
@@ -42,7 +53,7 @@ await client.turns.start(thread.id, "review input.txt", {
 });
 ```
 
-Other surfaces include `client.mcp`, `client.extensions`, `client.models.capabilities()`, server-initiated request events, and the raw `request()` escape hatch.
+Other surfaces include `client.mcp`, `client.extensions`, `client.models.capabilities()`, server-initiated request events, and raw `request()` calls for methods admitted by the runner firewall.
 
 Dynamic tools use Codex's experimental app-server API:
 
@@ -66,4 +77,4 @@ client.onToolCall(async (call) => ({
 
 Keep privileged tools behind your backend or an authenticated MCP server.
 
-the deploy command requires Node.js 20+, Cloudflare Workers Paid, Containers, and Wrangler OAuth or `CLOUDFLARE_API_TOKEN`.
+the deploy command requires Node.js 20+, Cloudflare Workers Paid, Containers, R2, and Wrangler OAuth or `CLOUDFLARE_API_TOKEN`. Codex login state is R2-backed; `/workspace` remains ephemeral in 0.2.0.

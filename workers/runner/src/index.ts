@@ -1,5 +1,5 @@
 import { getSandbox } from "@cloudflare/sandbox";
-export { Sandbox } from "@cloudflare/sandbox";
+export { ContainerProxy, Sandbox } from "@cloudflare/sandbox";
 
 type RunnerEnv = Env & {
   BYOA_APP_SECRET: string;
@@ -8,13 +8,17 @@ type RunnerEnv = Env & {
 
 type SessionClaims = {
   sandboxId: string;
+  workspaceAccess: WorkspaceAccess;
   exp: number;
 };
+
+type WorkspaceAccess = "read-only" | "workspace-write";
 
 type SessionInput = {
   installationId: string;
   userId: string;
   workspaceId: string;
+  workspaceAccess?: WorkspaceAccess;
   ttlSeconds?: number;
 };
 
@@ -102,7 +106,7 @@ async function verifyToken(secret: string, token: string): Promise<SessionClaims
     const expected = await hmac(secret, payload);
     if (!await secureEqual(expected, decodeBase64url(signature))) return null;
     const claims = JSON.parse(new TextDecoder().decode(decodeBase64url(payload))) as SessionClaims;
-    if (!claims.sandboxId || claims.exp <= Math.floor(Date.now() / 1000)) return null;
+    if (!claims.sandboxId || !["read-only", "workspace-write"].includes(claims.workspaceAccess) || claims.exp <= Math.floor(Date.now() / 1000)) return null;
     return claims;
   } catch {
     return null;
@@ -130,6 +134,9 @@ async function createSession(request: Request, env: RunnerEnv): Promise<Response
   if (![input.installationId, input.userId, input.workspaceId].every((value) => typeof value === "string" && value.length > 0 && value.length <= 200)) {
     return json({ error: "installationId, userId, and workspaceId are required" }, { status: 400 });
   }
+  if (input.workspaceAccess !== undefined && !["read-only", "workspace-write"].includes(input.workspaceAccess)) {
+    return json({ error: "workspaceAccess must be read-only or workspace-write" }, { status: 400 });
+  }
 
   const rate = await env.SESSION_RATE_LIMITER.limit({ key: await sessionRateKey(input) });
   if (!rate.success) return limited("sessions");
@@ -137,8 +144,10 @@ async function createSession(request: Request, env: RunnerEnv): Promise<Response
   const ttl = Math.min(Math.max(input.ttlSeconds ?? 300, 60), 900);
   const expiresAt = Math.floor(Date.now() / 1000) + ttl;
   const sandboxId = await sandboxIdFor(input);
+  const workspaceAccess: WorkspaceAccess = input.workspaceAccess ?? "workspace-write";
   const token = await issueToken(env.BYOA_APP_SECRET, {
     sandboxId,
+    workspaceAccess,
     exp: expiresAt,
   });
 
@@ -163,6 +172,9 @@ async function connect(request: Request, env: RunnerEnv): Promise<Response> {
   const processes = await sandbox.listProcesses();
   let supervisor = processes.find((process) => process.id === "byoa-supervisor");
   if (!supervisor) {
+    await sandbox.mountBucket("BYOA_STATE", "/var/lib/byoa/codex", {
+      prefix: `/sandboxes/${claims.sandboxId}/codex/`,
+    });
     supervisor = await sandbox.startProcess("node /opt/byoa/supervisor.mjs", {
       processId: "byoa-supervisor",
       env: {
@@ -185,7 +197,9 @@ async function connect(request: Request, env: RunnerEnv): Promise<Response> {
     throw error;
   }
 
-  return sandbox.wsConnect(request, 8787);
+  const headers = new Headers(request.headers);
+  headers.set("x-byoa-workspace-access", claims.workspaceAccess);
+  return sandbox.wsConnect(new Request(request, { headers }), 8787);
 }
 
 export default {

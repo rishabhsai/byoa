@@ -1,6 +1,6 @@
 {
   "name": "@rishabhsai/byoa",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Run user-authorized Codex app-servers in your Cloudflare account",
   "type": "module",
   "sideEffects": false,

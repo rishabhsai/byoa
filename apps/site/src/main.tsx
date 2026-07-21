@@ -100,7 +100,7 @@ function Landing() {
         <h2>what is byoa?</h2>
         <p>BYOA is a small deployment kit for products that need an agent inside the product. The developer deploys one BYOA Worker into their own Cloudflare account. Each user and workspace maps to an isolated runner with its own Codex state.</p>
         <p>The browser never receives your Cloudflare credential or the runner secret. It gets a short-lived BYOA session token. The end user completes Codex&apos;s ChatGPT device login and requests run against the access available to that account.</p>
-        <p>It is not a generic replacement for the OpenAI API. It is an integration layer around the open-source Codex app-server for products that need threads, approvals, tools, and streamed agent events.</p>
+        <p>It is not a generic replacement for the OpenAI API. It is an integration layer around the open-source Codex app-server for products that need threads, files, tools, and streamed agent events.</p>
       </section>
 
       <hr />
@@ -135,7 +135,7 @@ function Landing() {
 
       <section id="setup">
         <h2>setup</h2>
-        <p>Requirements: Node 20+, Workers Paid, and Containers enabled. The command uses Wrangler OAuth locally or a scoped Cloudflare token in CI. Never paste a global Cloudflare API key into the browser.</p>
+        <p>Requirements: Node 20+, Workers Paid, Containers, and R2. The command uses Wrangler OAuth locally or a scoped Cloudflare token in CI. Never paste a global Cloudflare API key into the browser.</p>
 
         <div className="setup-step">
           <h3>1. deploy the runner</h3>
@@ -158,6 +158,7 @@ const session = await byoa.createSession({
   installationId: "your-app",
   userId: signedInUser.id,
   workspaceId: project.id,
+  workspaceAccess: "workspace-write",
 });`}</code></pre>
         </div>
 
@@ -182,12 +183,14 @@ const login = await agent.startDeviceLogin();`}</code></pre>
         <h2>current status</h2>
         <dl className="status-list">
           <div><dt>landing + docs</dt><dd>live</dd></div>
-          <div><dt>npm package</dt><dd>0.1.0 / release ready</dd></div>
+          <div><dt>npm package</dt><dd>0.1.0 live / 0.2.0 candidate</dd></div>
           <div><dt>cloudflare runner</dt><dd>live / rate limited / container alpha</dd></div>
-          <div><dt>durable agent credentials</dt><dd>not done</dd></div>
+          <div><dt>protocol firewall</dt><dd>implemented / review pending</dd></div>
+          <div><dt>durable agent credentials</dt><dd>r2-backed / restart test pending</dd></div>
+          <div><dt>durable workspace files</dt><dd>not done</dd></div>
           <div><dt>install path</dt><dd>npm install @rishabhsai/byoa / npx @rishabhsai/byoa deploy</dd></div>
         </dl>
-        <p>The public demo uses Turnstile, short-lived sessions, and per-user runner limits. Codex account persistence and hostile-workload isolation are still alpha.</p>
+        <p>The public demo uses Turnstile, short-lived sessions, read-only workspaces, and per-user runner limits. Credential persistence and hostile-workload isolation are still alpha.</p>
       </section>
 
       <hr />
@@ -248,7 +251,7 @@ item/agentMessage/delta … turn/completed`}</code></pre>
         <hr />
         <section id="runtime">
           <h2>agent runtime</h2>
-          <p>The SDK keeps the full app-server surface. Use the typed helpers for common work and <code>request()</code> for protocol methods BYOA has not wrapped yet.</p>
+          <p>The SDK keeps the browser-safe app-server surface. Use the typed helpers for common work and <code>request()</code> for allowed protocol methods BYOA has not wrapped yet.</p>
           <pre><code>{`const agent = new BYOA({
   endpoint: session.endpoint,
   token: session.token,
@@ -261,7 +264,6 @@ await agent.workspace.write("/workspace/invoice.txt", invoice);
 const { thread } = await agent.threads.start({
   cwd: "/workspace",
   developerInstructions: "return a short risk report",
-  sandbox: "workspace-write",
 });
 
 await agent.turns.start(thread.id, [
@@ -311,7 +313,7 @@ const stop = agent.onToolCall(async (call) => {
         <hr />
         <section id="limits">
           <h2>alpha limits</h2>
-          <p>The current runner filesystem is ephemeral, dynamic tools use Codex&apos;s experimental protocol, and hostile-workload isolation needs a production security review. Durable account storage and the server-side tool router are not done.</p>
+          <p><code>/workspace</code> is ephemeral, credential persistence still needs a paid-account restart test, dynamic tools use Codex&apos;s experimental protocol, and hostile-workload isolation needs a production security review. The server-side tool router is not done.</p>
         </section>
       </article>
       <footer><span>byoa docs</span><a href="/">home</a></footer>

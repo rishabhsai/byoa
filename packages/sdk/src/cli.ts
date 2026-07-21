@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 const command = process.argv[2];
 
 if (command === "--version" || command === "-v") {
-  console.log("0.1.0");
+  console.log("0.2.0");
   process.exit(0);
 }
 
@@ -50,6 +50,18 @@ function run(executable: string, args: string[], cwd: string, input?: string) {
   });
 }
 
+function succeeds(executable: string, args: string[], cwd: string) {
+  return new Promise<boolean>((resolve, reject) => {
+    const child = spawn(executable, args, {
+      cwd,
+      env: process.env,
+      stdio: "ignore",
+    });
+    child.on("error", reject);
+    child.on("exit", (code) => resolve(code === 0));
+  });
+}
+
 const bundledRunner = join(dirname(fileURLToPath(import.meta.url)), "runner");
 const deployDirectory = await mkdtemp(join(tmpdir(), "byoa-deploy-"));
 const providedSecret = process.env.BYOA_APP_SECRET;
@@ -63,6 +75,11 @@ try {
 
   console.log("\nchecking Cloudflare…\n");
   await run("npx", ["--no-install", "wrangler", "whoami"], deployDirectory);
+
+  if (!await succeeds("npx", ["--no-install", "wrangler", "r2", "bucket", "info", "byoa-state", "--json"], deployDirectory)) {
+    console.log("\ncreating the private state bucket…\n");
+    await run("npx", ["--no-install", "wrangler", "r2", "bucket", "create", "byoa-state"], deployDirectory);
+  }
 
   console.log("\nsetting the runner secret…\n");
   await run("npx", ["--no-install", "wrangler", "secret", "put", "BYOA_APP_SECRET"], deployDirectory, `${secret}\n`);

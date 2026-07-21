@@ -46,7 +46,7 @@ The example app is deployed separately. It streams text, reads model choices fro
 
 ## agent runtime
 
-BYOA is not a chat abstraction. The browser SDK exposes typed thread, turn, workspace, model, MCP, skill, hook, and server-request helpers. Raw `request()` and protocol events remain available when an app needs more of Codex app-server.
+BYOA is not a chat abstraction. The browser SDK exposes typed thread, turn, workspace, model, MCP, skill, hook, and server-request helpers. Raw `request()` and protocol events remain available inside the runner's browser-safe method allowlist.
 
 ```ts
 await agent.workspace.write("/workspace/input.txt", input);
@@ -77,4 +77,4 @@ The runner limits session creation to 5 per user per minute and connection attem
 
 ## status
 
-0.1.0 is an alpha release. the site, protected demo, runner, and npm package source are usable. runner files and Codex login state are ephemeral until the R2 persistence design is implemented and reviewed.
+0.2.0 is an alpha release candidate. Codex login state is mounted from a sandbox-scoped R2 prefix and browser protocol access is allowlisted. `/workspace` is still ephemeral, and credential durability and hostile-workload isolation remain unclaimed until restart and adversarial tests pass in the paid Cloudflare account.

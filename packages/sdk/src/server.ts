@@ -2,6 +2,7 @@ export type SessionRequest = {
   installationId: string;
   userId: string;
   workspaceId: string;
+  workspaceAccess?: "read-only" | "workspace-write";
   ttlSeconds?: number;
 };
 

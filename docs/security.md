@@ -9,11 +9,19 @@ The runner executes model-directed shell commands. Treat every repository, promp
 3. no shared `CODEX_HOME`
 4. no credential files in `/workspace`
 5. no public app-server port
-6. explicit approval for privileged actions
+6. one fixed Codex permission profile per session
 7. short-lived browser session tokens
 8. privileged custom tools run behind a trusted backend or authenticated MCP server
 9. public paid-compute entry points require server-verified Turnstile
 10. session and connection routes are rate limited independently
+
+## protocol boundary
+
+The browser does not receive unrestricted app-server access. The supervisor allowlists supported methods, rejects full-access methods such as `thread/shellCommand`, constrains app-server filesystem calls to `/workspace`, and removes permission overrides from thread and turn requests.
+
+Codex starts with `approval_policy = "never"` and a fixed permission profile. Shell tools can access `/workspace` according to the server-issued session mode, cannot access `/var/lib/byoa/codex`, and have network access disabled. The browser cannot change those rules.
+
+These controls reduce the reachable surface; they are not yet a hostile-workload security claim. Symlink behavior, new app-server methods, MCP authority, and container escape boundaries still require adversarial review.
 
 ## custom tools
 
@@ -21,7 +29,7 @@ Codex dynamic tools are bidirectional: app-server sends `item/tool/call` to its 
 
 Until the signed backend tool router is implemented, use authenticated MCP for privileged tools or build an app backend endpoint that independently authenticates the user, validates every argument, and derives tenant identity from the server session rather than tool input.
 
-Before release, validate that a hostile prompt cannot read `CODEX_HOME`, other sandboxes, Worker secrets, or R2 credentials.
+Before a production isolation claim, validate that a hostile prompt cannot read `CODEX_HOME`, other sandboxes, Worker secrets, or R2 credentials.
 
 ## operations
 

@@ -16,7 +16,12 @@ test("creates a session through the trusted runner endpoint", async () => {
   };
 
   const server = new BYOAServer({ endpoint: "https://runner.example/", secret: "backend-secret" });
-  const session = await server.createSession({ installationId: "app", userId: "user", workspaceId: "work" });
+  const session = await server.createSession({
+    installationId: "app",
+    userId: "user",
+    workspaceId: "work",
+    workspaceAccess: "read-only",
+  });
 
   assert.equal(captured.input, "https://runner.example/v1/sessions");
   assert.equal(new Headers(captured.init?.headers).get("authorization"), "Bearer backend-secret");
@@ -24,6 +29,7 @@ test("creates a session through the trusted runner endpoint", async () => {
     installationId: "app",
     userId: "user",
     workspaceId: "work",
+    workspaceAccess: "read-only",
   });
   assert.equal(session.token, "session");
 });

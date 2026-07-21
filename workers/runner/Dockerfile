@@ -12,5 +12,6 @@ RUN npm install -g "@openai/codex@${CODEX_VERSION}" \
   && codex --version
 
 COPY supervisor.mjs /opt/byoa/supervisor.mjs
+COPY protocol-guard.mjs /opt/byoa/protocol-guard.mjs
 
 EXPOSE 8787

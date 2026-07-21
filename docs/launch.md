@@ -1,6 +1,6 @@
 # launch
 
-BYOA 0.1.0 is an alpha. Launch it as developer infrastructure, not as a durability or security guarantee.
+BYOA 0.2.0 is an alpha release candidate. Launch it as developer infrastructure, not as a durability or security guarantee.
 
 ## release checks
 
@@ -19,7 +19,10 @@ Verify the live surfaces:
 - the runner health endpoint returns `acceptingSessions: true`.
 - a valid demo token creates a session; missing or replayed tokens return `403`.
 - the sixth session request for one user within a minute returns `429`.
-- the npm package installs in an empty directory and `byoa --version` prints `0.1.0`.
+- the npm package installs in an empty directory and `byoa --version` prints `0.2.0`.
+- ChatGPT login survives stopping and replacing one sandbox for the same installation, user, and workspace tuple.
+- a browser request for `thread/shellCommand` is denied by the protocol firewall.
+- a read-only session cannot write through `fs/writeFile` or a turn-level permission override.
 
 ## connect byoa.lol
 
@@ -58,7 +61,8 @@ Set `BYOA_DISABLED=1` first when paid compute or isolation is at risk. Roll back
 
 ## known launch limits
 
-- sandbox files and Codex login state are ephemeral.
+- `/workspace` is ephemeral; workspace backup and restore is not implemented.
+- R2-backed Codex login state is beta until the restart test above passes.
 - dynamic tools depend on an experimental app-server surface.
 - privileged tools require an authenticated MCP server or independently authenticated backend route.
 - the current isolation model still needs a hostile-workload review before a production claim.
