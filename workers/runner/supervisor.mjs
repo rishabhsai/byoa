@@ -2,6 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import { createServer } from "node:http";
 import { WebSocket, WebSocketServer } from "ws";
+import { SingleConnectionQueue } from "./connection-queue.mjs";
 import { restoreCredentials, watchCredentials } from "./credential-store.mjs";
 import { codexConfig, guardClientMessage } from "./protocol-guard.mjs";
 
@@ -34,28 +35,52 @@ const server = createServer((request, response) => {
 });
 
 const sockets = new WebSocketServer({ server, maxPayload: 16 * 1024 * 1024 });
-let active = false;
+const maxQueuedBytes = 16 * 1024 * 1024;
+const maxQueuedMessages = 1_000;
 
-async function connect(socket, request) {
-  if (active) {
-    socket.close(1013, "runner already connected");
-    return;
-  }
-  active = true;
+function appServerErrorCategory(stderr, spawnError) {
+  if (spawnError) return "spawn";
+  const value = stderr.toLowerCase();
+  if (!value.trim()) return "none";
+  if (value.includes("permission denied")) return "filesystem_permission";
+  if (value.includes("auth") || value.includes("credential") || value.includes("token")) return "authentication";
+  if (value.includes("already in use") || value.includes("resource busy") || value.includes("lock")) return "resource_conflict";
+  if (value.includes("panic") || value.includes("fatal")) return "fatal";
+  return "stderr";
+}
+
+function flushCredentials() {
+  if (!credentialSync) return;
+  void credentialSync.flush().catch((error) => {
+    console.error(JSON.stringify({
+      event: "credential_sync_failed",
+      error: error instanceof Error ? error.message : String(error),
+    }));
+  });
+}
+
+async function runConnection(connection) {
+  const { socket, request } = connection;
+  if (connection.closed || socket.readyState !== WebSocket.OPEN) return;
 
   const workspaceAccess = request.headers["x-byoa-workspace-access"] === "workspace-write"
     ? "workspace-write"
     : "read-only";
 
   await writeFile(`${codexHome}/config.toml`, codexConfig(workspaceAccess), { mode: 0o600 });
+  if (connection.closed || socket.readyState !== WebSocket.OPEN) return;
 
   const codex = spawn("codex", ["app-server", "--stdio"], {
     cwd: "/workspace",
     env: { ...process.env, CODEX_HOME: codexHome },
     stdio: ["pipe", "pipe", "pipe"],
   });
+  connection.codex = codex;
+  console.log(JSON.stringify({ event: "app_server_started" }));
 
   let stdout = "";
+  let stderr = "";
+  let spawnError;
   codex.stdout.setEncoding("utf8");
   codex.stdout.on("data", (chunk) => {
     stdout += chunk;
@@ -67,7 +92,7 @@ async function connect(socket, request) {
         try {
           const event = JSON.parse(line);
           if (event.method === "account/login/completed" && event.params?.success !== false) {
-            void credentialSync.flush();
+            flushCredentials();
           }
         } catch {
           // app-server owns stdout; malformed protocol lines are handled by the client.
@@ -77,10 +102,17 @@ async function connect(socket, request) {
     }
   });
 
-  codex.stderr.resume();
+  codex.stderr.setEncoding("utf8");
+  codex.stderr.on("data", (chunk) => {
+    stderr = `${stderr}${chunk}`.slice(-8_192);
+  });
+  codex.stdin.on("error", () => {});
+  codex.on("error", (error) => {
+    spawnError = error;
+  });
 
-  socket.on("message", (message) => {
-    const guarded = guardClientMessage(String(message), workspaceAccess);
+  const forward = (message) => {
+    const guarded = guardClientMessage(message, workspaceAccess);
     if (guarded.action === "close") {
       socket.close(guarded.code, guarded.reason);
       return;
@@ -91,20 +123,44 @@ async function connect(socket, request) {
       return;
     }
     if (codex.stdin.writable) codex.stdin.write(`${guarded.message}\n`);
-  });
-
-  const close = () => {
-    if (!codex.killed) codex.kill("SIGTERM");
-    active = false;
   };
-  socket.on("close", close);
-  socket.on("error", close);
-  codex.on("exit", (code) => {
-    void credentialSync?.flush();
+  connection.forward = forward;
+  for (const message of connection.messages) {
+    if (connection.closed) break;
+    forward(message);
+  }
+  connection.messages = [];
+  connection.bytes = 0;
+
+  if (connection.closed) connection.terminate();
+
+  await new Promise((resolve) => codex.once("close", (code, signal) => {
+    if (connection.killTimer) clearTimeout(connection.killTimer);
+    flushCredentials();
+    console.log(JSON.stringify({
+      event: "app_server_exited",
+      code: code ?? "signal",
+      signal: signal ?? "none",
+      error: appServerErrorCategory(stderr, spawnError),
+    }));
     if (socket.readyState === WebSocket.OPEN) socket.close(1011, `codex exited (${code ?? "signal"})`);
-    active = false;
-  });
+    resolve();
+  }));
 }
+
+const queue = new SingleConnectionQueue(async (connection) => {
+  try {
+    await runConnection(connection);
+  } catch (error) {
+    console.error(JSON.stringify({
+      event: "connection_setup_failed",
+      error: error instanceof Error ? error.message : String(error),
+    }));
+    if (connection.socket.readyState === WebSocket.OPEN) connection.socket.close(1011, "runner setup failed");
+  }
+}, (connection) => {
+  if (connection.socket.readyState === WebSocket.OPEN) connection.socket.close(1013, "runner connection queue is full");
+});
 
 if (credentialSync) {
   for (const signal of ["SIGINT", "SIGTERM"]) {
@@ -121,14 +177,47 @@ if (credentialSync) {
 }
 
 sockets.on("connection", (socket, request) => {
-  void connect(socket, request).catch((error) => {
-    console.error(JSON.stringify({
-      event: "connection_setup_failed",
-      error: error instanceof Error ? error.message : String(error),
-    }));
-    active = false;
-    if (socket.readyState === WebSocket.OPEN) socket.close(1011, "runner setup failed");
+  const connection = {
+    socket,
+    request,
+    messages: [],
+    bytes: 0,
+    closed: false,
+    codex: undefined,
+    forward: undefined,
+    killTimer: undefined,
+    terminate() {
+      const codex = connection.codex;
+      if (!codex || codex.exitCode !== null || codex.signalCode !== null) return;
+      codex.kill("SIGTERM");
+      connection.killTimer ??= setTimeout(() => {
+        if (codex.exitCode === null && codex.signalCode === null) codex.kill("SIGKILL");
+      }, 2_000);
+      connection.killTimer.unref();
+    },
+  };
+
+  socket.on("message", (message) => {
+    const raw = String(message);
+    if (connection.forward) {
+      connection.forward(raw);
+      return;
+    }
+    connection.bytes += Buffer.byteLength(raw);
+    connection.messages.push(raw);
+    if (connection.bytes > maxQueuedBytes || connection.messages.length > maxQueuedMessages) {
+      socket.close(1009, "connection queue exceeded");
+    }
   });
+
+  const close = () => {
+    if (connection.closed) return;
+    connection.closed = true;
+    if (!queue.cancel(connection)) connection.terminate();
+  };
+  socket.on("close", close);
+  socket.on("error", close);
+  queue.enqueue(connection);
 });
 
 server.listen(port, "0.0.0.0", () => console.log(`byoa supervisor listening on ${port}`));

@@ -13,6 +13,8 @@ await mkdir(join(runnerOutput, "src"), { recursive: true });
 await Promise.all([
   cp(join(runnerSource, "Dockerfile"), join(runnerOutput, "Dockerfile")),
   cp(join(runnerSource, "package.json"), join(runnerOutput, "package.json")),
+  cp(join(runnerSource, "connection-queue.mjs"), join(runnerOutput, "connection-queue.mjs")),
+  cp(join(runnerSource, "connection-queue.test.mjs"), join(runnerOutput, "connection-queue.test.mjs")),
   cp(join(runnerSource, "credential-store.mjs"), join(runnerOutput, "credential-store.mjs")),
   cp(join(runnerSource, "credential-store.test.mjs"), join(runnerOutput, "credential-store.test.mjs")),
   cp(join(runnerSource, "protocol-guard.mjs"), join(runnerOutput, "protocol-guard.mjs")),
