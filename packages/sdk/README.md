@@ -1,6 +1,10 @@
 # byoa
 
-Run your users' Codex app-server in your Cloudflare account. They sign in with ChatGPT. No shared API key.
+bring your own agent.
+
+run your users' Codex app-server in your Cloudflare account. they sign in with ChatGPT. no shared API key.
+
+[site](https://byoa.lol) · [docs](https://byoa.lol/docs) · [demo](https://demo.byoa.lol) · [source](https://github.com/rishabhsai/byoa)
 
 ```bash
 npx byoa deploy
@@ -62,6 +66,4 @@ client.onToolCall(async (call) => ({
 
 Keep privileged tools behind your backend or an authenticated MCP server.
 
-The deploy command requires Node.js 20+, Cloudflare Workers Paid, Containers, and Wrangler OAuth or `CLOUDFLARE_API_TOKEN`.
-
-[docs](https://byoa.lol/docs) · [demo](https://demo.byoa.lol) · [source](https://github.com/rishabhsai/byoa)
+the deploy command requires Node.js 20+, Cloudflare Workers Paid, Containers, and Wrangler OAuth or `CLOUDFLARE_API_TOKEN`.

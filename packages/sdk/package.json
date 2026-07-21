@@ -51,6 +51,10 @@
     "url": "git+https://github.com/rishabhsai/byoa.git",
     "directory": "packages/sdk"
   },
+  "homepage": "https://byoa.lol",
+  "bugs": {
+    "url": "https://github.com/rishabhsai/byoa/issues"
+  },
   "publishConfig": {
     "access": "public"
   },

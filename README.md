@@ -4,7 +4,7 @@ bring your own agent.
 
 BYOA runs your users' Codex app-server in the cloud. They sign in with ChatGPT. You do not carry one shared API bill.
 
-[site](https://byoa.lol) · [demo](https://demo.byoa.lol) · [agent setup](https://byoa.lol/agent)
+[site](https://byoa.lol) · [docs](https://byoa.lol/docs) · [demo](https://demo.byoa.lol) · [npm](https://www.npmjs.com/package/byoa) · [agent setup](https://byoa.lol/agent)
 
 ```bash
 curl -fsSL https://byoa.lol/agent
@@ -77,4 +77,4 @@ The runner limits session creation to 5 per user per minute and connection attem
 
 ## status
 
-0.1.0 is an alpha release. the site, npm package, protected demo, and runner are usable. runner files and Codex login state are ephemeral until the R2 persistence design is implemented and reviewed.
+0.1.0 is an alpha release. the site, protected demo, and runner are usable. npm publication is waiting on maintainer 2FA approval. runner files and Codex login state are ephemeral until the R2 persistence design is implemented and reviewed.
